@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TK DCS — Departure Control System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/4.7.0/bwip-js-min.js"></script>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+<script src="https://unpkg.com/@zxing/browser@latest"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --navy-dk:#0b2340;
+  --navy:#123a63;
+  --navy-lt:#1f5390;
+  --panel:#dfe4ea;
+  --panel-dk:#c7ced8;
+  --field:#ffffff;
+  --ink:#101820;
+  --accent:#2f7dd1;
+  --accent-dk:#1a5aa3;
+  --ok:#1a7f37;
+  --ok-bg:#d9f2df;
+  --warn:#b5860a;
+  --warn-bg:#fdf1d6;
+  --err:#b3121b;
+  --err-bg:#fbdfe0;
+  --border:#8b96a4;
+  --mono:'Consolas','Lucida Console',monospace;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#7d8896;color:var(--ink);font-size:13px;}
+
+/* ===== TOP SYSTEM BAR ===== */
+header.sysbar{
+  background:linear-gradient(180deg,var(--navy) 0%,var(--navy-dk) 100%);
+  color:#fff;padding:6px 14px;display:flex;align-items:center;gap:10px;
+  border-bottom:3px solid var(--accent);
+}
+header.sysbar .tag{background:#c8102e;color:#fff;font-weight:800;padding:3px 9px;border-radius:2px;font-size:12px;letter-spacing:.5px;}
+header.sysbar .sysname{font-weight:700;font-size:13px;letter-spacing:.3px;}
+header.sysbar .sysver{color:#9db3cf;font-size:11px;}
+header.sysbar .spacer{flex:1;}
+header.sysbar .clock{font-family:var(--mono);font-size:12px;color:#cfe0f5;}
+header.sysbar .userbox{font-family:var(--mono);font-size:11px;background:#0006;padding:3px 8px;border-radius:2px;}
+
+/* ===== TOAST (in-page notifications — no dependency on native alert/confirm) ===== */
+#toastbar{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;max-width:92vw;}
+.toast{
+  background:#2a2a2a;color:#fff;padding:10px 14px;border-radius:6px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.35);
+  display:flex;align-items:center;gap:10px;margin-bottom:6px;
+}
+.toast.err{background:#7a1e24;}
+.toast.ok{background:#1f5c34;}
+.toast button{background:none;border:none;color:#fff;font-weight:800;cursor:pointer;font-size:14px;}
+
+/* ===== FLIGHT BANNER ===== */
+.flightbanner{
+  background:repeating-linear-gradient(135deg,#1a3a5f,#1a3a5f 2px,#173252 2px,#173252 4px);
+  color:#fff;padding:8px 16px;display:flex;flex-wrap:wrap;gap:22px;align-items:center;
+  border-bottom:1px solid #0a1c30;font-family:var(--mono);
+}
+.flightbanner .fb-item{display:flex;flex-direction:column;line-height:1.25;}
+.flightbanner .fb-item label{font-size:9px;color:#9fb8d6;text-transform:uppercase;letter-spacing:.6px;font-family:'Segoe UI',sans-serif;}
+.flightbanner .fb-item span{font-size:14px;font-weight:700;}
+.flightbanner select{
+  background:#0b2340;color:#fff;border:1px solid #3a5f8a;font-family:var(--mono);font-size:12px;padding:4px 6px;border-radius:2px;
+}
+
+/* ===== LAYOUT: LEFT NAV + CONTENT ===== */
+.shell{display:flex;min-height:calc(100vh - 108px);}
+nav.modnav{
+  width:168px;background:var(--panel-dk);border-right:1px solid var(--border);flex-shrink:0;
+  display:flex;flex-direction:column;padding:6px 0;
+}
+nav.modnav button{
+  background:none;border:none;text-align:left;padding:10px 14px;font-size:12.5px;font-weight:600;color:#243040;
+  cursor:pointer;border-left:4px solid transparent;display:flex;align-items:center;gap:8px;
+}
+nav.modnav button .k{font-family:var(--mono);font-size:10px;background:#fff;border:1px solid var(--border);border-radius:2px;padding:1px 5px;color:#555;}
+nav.modnav button.active{background:var(--panel);border-left-color:var(--accent);color:var(--navy-dk);}
+nav.modnav button:hover{background:#eef1f5;}
+
+main.content{flex:1;padding:16px;background:var(--panel);overflow-x:auto;}
+
+.panel{background:#fff;border:1px solid var(--border);margin-bottom:14px;}
+.panel .panel-title{
+  background:linear-gradient(180deg,#eef2f6,#dde3ea);border-bottom:1px solid var(--border);
+  padding:7px 12px;font-size:11.5px;font-weight:700;color:var(--navy-dk);text-transform:uppercase;letter-spacing:.5px;
+}
+.panel .panel-body{padding:14px;}
+
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+.field{display:flex;flex-direction:column;gap:3px;font-size:10.5px;color:#3a4553;text-transform:uppercase;letter-spacing:.3px;font-weight:600;}
+.field input,.field select{
+  padding:6px 8px;border:1px solid var(--border);border-radius:2px;font-size:12.5px;min-width:110px;font-family:var(--mono);
+  background:var(--field);
+}
+.field input:focus,.field select:focus{outline:2px solid var(--accent);outline-offset:-1px;}
+
+button.btn{
+  background:linear-gradient(180deg,var(--accent),var(--accent-dk));color:#fff;border:1px solid #164a80;padding:7px 14px;
+  border-radius:2px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.2px;
+}
+button.btn:hover{filter:brightness(1.08);}
+button.btn.secondary{background:#fff;color:var(--navy-dk);border:1px solid var(--border);}
+button.btn.secondary:hover{background:#eef1f5;}
+button.btn:disabled{opacity:.4;cursor:not-allowed;}
+button.btn.small{padding:4px 9px;font-size:11px;}
+button.btn.danger{background:linear-gradient(180deg,#d1454d,#a3222a);border-color:#7a1319;}
+
+table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono);}
+table th{
+  text-align:left;background:var(--navy);color:#fff;padding:7px 8px;font-size:10.5px;text-transform:uppercase;
+  letter-spacing:.4px;font-family:'Segoe UI',sans-serif;font-weight:700;
+}
+table td{padding:6px 8px;border-bottom:1px solid #dde1e6;}
+table tbody tr:nth-child(even){background:#f5f7f9;}
+table tbody tr:hover{background:#eaf1fb;}
+
+.badge{display:inline-block;padding:2px 7px;border-radius:2px;font-size:10.5px;font-weight:800;letter-spacing:.3px;font-family:'Segoe UI',sans-serif;}
+.badge.business{background:#2b2b2b;color:#f4d68b;}
+.badge.premium{background:#dcd3b3;color:#5a4a1e;}
+.badge.economy{background:#cfe0f5;color:#153a63;}
+.badge.ok{background:var(--ok-bg);color:var(--ok);}
+.badge.pending{background:var(--err-bg);color:var(--err);}
+.badge.boarded{background:#d3e8ff;color:#0a5c9e;}
+
+/* Seat map */
+.seatmap{display:flex;flex-direction:column;gap:3px;max-height:380px;overflow-y:auto;padding:10px;background:#0e2a4a;border-radius:3px;}
+.seatrow{display:flex;align-items:center;gap:10px;}
+.seatrow .rownum{width:24px;font-size:10px;color:#9fb8d6;text-align:right;font-family:var(--mono);}
+.seatgroup{display:flex;gap:3px;}
+.seat{
+  width:26px;height:26px;border-radius:2px;border:1px solid #3a5f8a;background:#1a3a5f;font-size:10px;font-family:var(--mono);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:#cfe0f5;
+}
+.seat.taken{background:#0a1c30;color:#4a5f78;cursor:not-allowed;border-color:#22344a;}
+.seat.selected{background:#c8102e;color:#fff;border-color:#7a0a1c;}
+.seat.business{border-color:#c9a95a;}
+.seat.premium{border-color:#c9b98a;}
+.seat.economy{border-color:#5a8ac9;}
+
+.pax-list{display:flex;flex-direction:column;gap:8px;}
+.pax-card{border:1px solid var(--border);border-radius:2px;padding:9px 10px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:#f7f9fb;}
+.pax-card .name{font-weight:700;min-width:190px;font-size:12.5px;align-self:center;font-family:var(--mono);}
+
+/* ===== BOARDING PASS — replica of TK ATB stock (main coupon + agent stub) ===== */
+.pass{
+  width:230mm;height:90mm;background:#fdfdfb;position:relative;overflow:hidden;
+  border:1px solid #bbb;color:#111;display:flex;
+  font-family:'VT323','Share Tech Mono',monospace;
+}
+.pass .coupon{display:flex;flex-direction:column;position:relative;height:100%;}
+.pass .coupon.main{width:64%;border-right:2px dashed #999;}
+.pass .coupon.stub{width:36%;}
+.pass .redhead{
+  background:#c8102e;color:#fff;display:flex;align-items:center;gap:6px;padding:2.5mm 4mm;
+  font-family:Arial,Helvetica,sans-serif;flex-shrink:0;
+}
+.pass .redhead .bird{width:22px;height:15px;flex-shrink:0;color:#fff;}
+.pass .redhead .bird svg{width:100%;height:100%;display:block;}
+.pass .redhead .brand{font-weight:800;font-size:10.5px;line-height:1.15;letter-spacing:.3px;}
+.pass .redhead .divider{width:1px;align-self:stretch;background:rgba(255,255,255,.5);margin:0 2px;}
+.pass .redhead .bp-label{font-size:9px;font-weight:700;letter-spacing:.3px;}
+.pass .redhead .spacer{flex:1;}
+.pass .redhead .star{font-size:7.5px;text-align:right;line-height:1.15;opacity:.95;}
+
+.pass .body{flex:1;display:flex;position:relative;overflow:hidden;}
+.pass .barcode-col{
+  width:28mm;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:2mm 0;border-right:1px solid #ccc;overflow:hidden;
+}
+.pass .barcode-col canvas{width:23mm;height:96%;display:block;}
+.pass .content{flex:1;padding:2.5mm 5mm;display:flex;flex-direction:column;gap:1mm;position:relative;}
+
+.pass .stampband{
+  position:absolute;top:1mm;right:6mm;font-family:'VT323',monospace;font-weight:700;font-size:21px;letter-spacing:2.5px;
+  color:#111;opacity:.85;transform:rotate(-2deg);z-index:3;
+}
+.pass .toprow{display:flex;justify-content:space-between;font-size:17px;margin-top:6mm;}
+.pass .toprow .fqtv{font-size:12px;text-align:right;line-height:1.3;}
+.pass .flightline{display:flex;gap:4mm;font-size:16px;margin-top:1mm;flex-wrap:wrap;align-items:baseline;}
+.pass .flightline .apis{margin-left:auto;font-size:12px;text-align:right;line-height:1.3;}
+
+.pass .bigfields{display:flex;gap:3.5mm;margin-top:2mm;}
+.pass .bigfields .bf{border:1.4px solid #111;padding:1.2mm 2.5mm;text-align:center;min-width:23mm;}
+.pass .bigfields .bf b{display:block;font-size:6px;font-family:Arial,sans-serif;color:#333;font-weight:700;letter-spacing:.2px;}
+.pass .bigfields .bf span{font-size:18px;font-weight:700;font-family:'VT323',monospace;}
+
+.pass .destcity{font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:19px;margin-top:2mm;letter-spacing:.3px;}
+.pass .ticketline{font-size:13px;margin-top:auto;padding-top:1.5mm;}
+.pass .secline{font-size:11.5px;color:#222;}
+.pass .microtext{font-size:8px;color:#333;font-family:Arial,sans-serif;margin-top:1mm;line-height:1.3;}
+
+/* stub coupon specific */
+.pass .stubtable{display:grid;grid-template-columns:1fr 1fr;gap:1mm 5mm;font-size:12px;margin-top:1.5mm;}
+.pass .stubtable label{display:block;font-size:6px;font-family:Arial,sans-serif;color:#555;font-weight:700;letter-spacing:.2px;}
+.pass .stub-namebox{font-size:17px;margin-top:5mm;}
+.pass .stub-headrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:7.5px;font-family:Arial,sans-serif;color:#555;font-weight:700;margin-top:2.5mm;border-bottom:1px solid #999;padding-bottom:1mm;}
+.pass .stub-valrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:13px;margin-top:1mm;}
+.pass .stub-boxes{display:flex;gap:2.5mm;margin-top:2mm;}
+.pass .stub-boxes .bf{border:1.4px solid #111;padding:1.2mm 2.5mm;text-align:center;flex:1;}
+.pass .stub-boxes .bf b{display:block;font-size:6px;font-family:Arial,sans-serif;color:#333;font-weight:700;}
+.pass .stub-boxes .bf span{font-size:18px;font-weight:700;}
+.pass .stub-footline{font-size:11.5px;margin-top:auto;padding-top:1.5mm;}
+.pass .stub-star{position:absolute;bottom:2.5mm;right:4mm;font-size:7.5px;text-align:right;font-family:Arial,sans-serif;color:#333;line-height:1.3;}
+
+/* qrbox removed — single real PDF417 barcode is now the only machine-readable code */
+
+/* ===== BAG TAG — vertical strip, top-to-bottom, replica of real TK/handling-agent tag ===== */
+.bagtag-wrap{overflow-x:auto;padding:14px;background:#f7f9fb;border:1px solid var(--border);border-radius:3px;display:flex;justify-content:center;}
+.bagtag{
+  width:46mm;background:#fdfdfb;border:1px solid #999;position:relative;
+  font-family:'VT323','Share Tech Mono',monospace;color:#111;
+  padding:0 4mm;
+}
+.bagtag::before,.bagtag::after{
+  content:'';position:absolute;top:0;bottom:0;width:4mm;
+  background:repeating-linear-gradient(180deg,#6bbf59,#6bbf59 8px,#5aab49 8px,#5aab49 16px);
+}
+.bagtag::before{left:0;} .bagtag::after{right:0;}
+.bagtag .barblock{padding:3mm 0 1mm;display:flex;justify-content:center;position:relative;z-index:1;}
+.bagtag .barblock canvas{width:100%;height:auto;display:block;}
+.bagtag .databox{border-top:1px solid #999;padding:2mm 0;font-size:13px;position:relative;z-index:1;}
+.bagtag .databox .row{display:flex;justify-content:space-between;padding:0.5mm 0;}
+.bagtag .databox .seqbox{display:inline-block;border:1.5px solid #111;padding:0 2mm;font-weight:700;}
+.bagtag .destrow{border:1.5px solid #111;margin:1.5mm 0;padding:1mm 1.5mm;}
+.bagtag .destrow .toplab{font-size:8px;font-family:Arial,sans-serif;font-weight:700;color:#333;}
+.bagtag .destrow .city{font-weight:800;font-size:15px;font-family:Arial,Helvetica,sans-serif;}
+.bagtag .destrow .bottomrow{display:flex;justify-content:space-between;font-size:13px;margin-top:1mm;}
+.bagtag .destrow .code{font-weight:800;font-size:19px;}
+.bagtag .viabox{border:1.2px solid #555;margin:1.5mm 0;padding:1mm 1.5mm;}
+.bagtag .viabox .toplab{font-size:8px;font-family:Arial,sans-serif;font-weight:700;color:#333;display:flex;justify-content:space-between;}
+.bagtag .viabox .city{font-weight:800;font-size:13px;font-family:Arial,Helvetica,sans-serif;}
+.bagtag .viabox .bottomrow{display:flex;justify-content:space-between;font-size:11px;margin-top:0.5mm;}
+.bagtag .viabox .code{font-weight:800;font-size:15px;}
+.bagtag .viabox.empty{border-style:dashed;color:#888;text-align:center;font-size:10px;padding:1.5mm;}
+.bagtag .stub{border-top:1px dashed #999;padding:2mm 0;position:relative;z-index:1;}
+.bagtag .stub .line1{font-size:11px;}
+.bagtag .stub .bars{width:100%;height:22px;margin-top:1mm;display:block;}
+.bagtag .minitag{
+  margin:5mm 0 4mm;border:1.5px solid #999;border-radius:4mm;padding:2.5mm;position:relative;z-index:1;background:#fff;
+  font-size:11px;
+}
+.bagtag .minitag .toprow{display:flex;justify-content:space-between;align-items:center;font-family:Arial,sans-serif;font-size:8.5px;font-weight:700;}
+.bagtag .minitag .toprow .box{width:8px;height:8px;border:1.3px solid #111;display:inline-block;}
+.bagtag .minitag .destbox{border:1.5px solid #111;margin:1.2mm 0;padding:1mm 1.5mm;text-align:center;}
+.bagtag .minitag .destbox .city{font-weight:800;font-size:13px;font-family:Arial,sans-serif;}
+.bagtag .minitag .destbox .sub{font-size:10.5px;display:flex;justify-content:space-between;margin-top:1mm;}
+.bagtag .minitag .viabox{border:1px solid #666;margin:1mm 0;padding:0.8mm 1.5mm;font-size:9.5px;}
+.bagtag .minitag .viabox .toplab{font-size:7px;font-family:Arial,sans-serif;font-weight:700;color:#333;display:flex;justify-content:space-between;}
+.bagtag .minitag .bars{width:100%;height:18px;margin-top:1.2mm;display:block;}
+.bagtag .loopline{
+  position:absolute;left:50%;top:-4mm;width:1px;height:4mm;border-left:1px dashed #999;
+}
+
+/* Print control */
+@media print{
+  body *{visibility:hidden;}
+  .print-target,.print-target *{visibility:visible;}
+  .print-target{position:absolute;top:0;left:0;}
+}
+.offscreen-print{position:absolute;left:-99999px;top:0;width:0;height:0;overflow:hidden;}
+
+/* Camera */
+.cam-wrap{position:relative;width:420px;max-width:100%;background:#000;border-radius:3px;overflow:hidden;}
+.cam-wrap video{width:100%;display:block;}
+.cam-frame{position:absolute;inset:15% 10%;border:2px solid #fff;border-radius:4px;opacity:.6;pointer-events:none;}
+.scan-result{margin-top:12px;padding:14px;border-radius:3px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:10px;}
+.scan-result.ok{background:var(--ok-bg);color:var(--ok);}
+.scan-result.err{background:var(--err-bg);color:var(--err);}
+
+/* Boarding control screen */
+.boardsummary{display:flex;gap:24px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:#0e2a4a;border-radius:4px;color:#fff;}
+.boardsummary .bs-item{display:flex;flex-direction:column;line-height:1.25;}
+.boardsummary .bs-item label{font-size:9px;color:#9fb8d6;text-transform:uppercase;letter-spacing:.5px;}
+.boardsummary .bs-item span{font-size:18px;font-weight:800;font-family:var(--mono);}
+.boardsummary .bs-progress{flex:1;min-width:160px;}
+.boardbar{height:16px;background:#1a3a5f;border-radius:8px;overflow:hidden;border:1px solid #3a5f8a;}
+.boardbar .fill{height:100%;background:linear-gradient(90deg,#1a7f37,#2fa84f);transition:width .3s ease;}
+.boardsummary .bs-progress .pct{font-size:11px;color:#cfe0f5;margin-top:3px;font-family:var(--mono);}
+.gate-seatmap{display:flex;flex-direction:column;gap:3px;max-height:460px;overflow-y:auto;padding:10px;background:#0e2a4a;border-radius:3px;}
+.gate-seat{
+  width:26px;height:26px;border-radius:2px;border:1px solid #3a5f8a;background:#1a3a5f;font-size:10px;font-family:var(--mono);
+  display:flex;align-items:center;justify-content:center;color:#4a5f78;cursor:default;
+}
+.gate-seat.empty{background:transparent;border-color:transparent;}
+.gate-seat.notcheckedin{background:#0e2a4a;border-color:#22344a;color:#3a5068;}
+.gate-seat.checkedin{background:#7a5a12;border-color:#a97e1e;color:#ffe9b8;cursor:pointer;}
+.gate-seat.boarded{background:#1a7f37;border-color:#2fa84f;color:#fff;cursor:pointer;}
+.gate-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#3a4553;margin-top:8px;align-items:center;}
+.gate-legend .sw{width:12px;height:12px;border-radius:2px;display:inline-block;margin-right:4px;vertical-align:middle;}
+
+.manifest-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+small.hint{color:#4a5568;font-size:11px;display:block;margin-top:6px;}
+.empty{color:#4a5568;font-size:13px;padding:16px;text-align:center;}
+
+/* ===== FUNCTION KEY BAR ===== */
+footer.fkeybar{
+  background:linear-gradient(180deg,#26374d,#152230);border-top:2px solid var(--accent);
+  display:flex;gap:2px;padding:4px 6px;overflow-x:auto;
+}
+footer.fkeybar .fk{
+  background:#22405e;color:#fff;font-family:var(--mono);font-size:11px;padding:6px 10px;border:1px solid #3a5170;
+  border-radius:2px;white-space:nowrap;
+}
+footer.fkeybar .fk b{color:#7fc0ff;margin-right:5px;}
+</style>
+</head>
+<body>
+
+<div id="toastbar"></div>
+<header class="sysbar">
+  <div class="tag">TK</div>
+  <div class="sysname">TURKISH AIRLINES — DEPARTURE CONTROL SYSTEM</div>
+  <div class="sysver">DCS-SIM v1.1 · Customer Management</div>
+  <div class="spacer"></div>
+  <div class="userbox">AGENT: IST01 · DUTY: CHECK-IN/BOARDING</div>
+  <div class="clock" id="clockNow"></div>
+</header>
+
+<div class="flightbanner" id="flightbanner"></div>
+
+<div class="shell">
+  <nav class="modnav" id="modnav"></nav>
+  <main class="content" id="main"></main>
+</div>
+
+<footer class="fkeybar" id="fkeybar"></footer>
+
+<script>
+/* =====================================================================
+   DATA MODEL
+===================================================================== */
+/* =====================================================================
+   SUPABASE CONFIG — fill these in once you've created your project
+   (Supabase dashboard → Settings → API). Leave blank to keep using
+   only local browser storage (per-device, no cross-device sync).
+===================================================================== */
+const SUPABASE_URL = "https://zjjlwcrnlkjrdxayfymh.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpqamx3Y3JubGtqcmR4YXlmeW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NzkyMzYsImV4cCI6MjA5OTQ1NTIzNn0.7OBNn-6W8OXAcpb1Mxm7enSijh3oES-Jivml_41RKFo";
+const SUPABASE_ROW_ID = "main"; // shared workspace id — every device using this id shares the same data
+const sbClient = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+const AIRLINE = { name:"TURKISH AIRLINES", iata:"TK", btic:"235" };
+const BIRD_SVG = `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
+  <path fill="currentColor" d="M60 8 C61 22, 61 30, 60 40 L60 8 Z"/>
+  <path fill="currentColor" d="M60 24 C50 10, 28 4, 4 20 C24 20, 40 26, 52 40 C38 38, 20 40, 2 52 C26 48, 44 50, 56 62 L60 68 L64 62 C76 50, 94 48, 118 52 C100 40, 82 38, 68 40 C80 26, 96 20, 116 20 C92 4, 70 10, 60 24 Z"/>
+</svg>`;
+
+const AIRCRAFT_PRESETS = {
+  "Narrowbody (A321)": {
+    business: { rows:[1,2,3], groups:[["A","C"],["D","F"]] },
+    premium: null,
+    economy: { rows:range(4,30), groups:[["A","B","C"],["D","E","F"]] }
+  },
+  "Widebody (B777-300ER)": {
+    business: { rows:[1,2,3,4], groups:[["A"],["C","D"],["G","H"],["K"]] },
+    premium: { rows:range(10,14), groups:[["A","C"],["D","E","F","G"],["H","K"]] },
+    economy: { rows:range(20,46), groups:[["A","B","C"],["D","E","F","G"],["H","J","K"]] }
+  }
+};
+
+function range(a,b){const r=[];for(let i=a;i<=b;i++)r.push(i);return r;}
+
+function parseGroups(pattern){
+  // "AC|DFG|HK" -> [["A","C"],["D","F","G"],["H","K"]]
+  return pattern.split('|').map(g=>g.trim().split('').filter(ch=>/[A-Z]/i.test(ch)).map(ch=>ch.toUpperCase())).filter(g=>g.length>0);
+}
+function groupsToPattern(groups){
+  return groups.map(g=>g.join('')).join('|');
+}
+
+function getAircraftByReg(reg){
+  return STATE.aircraftRegistry.find(a=>a.reg===reg);
+}
+
+function buildSeatList(tailNumber){
+  const ac = getAircraftByReg(tailNumber);
+  if(!ac) return [];
+  const seats = [];
+  ["business","premium","economy"].forEach(cls=>{
+    const def = ac.classes[cls];
+    if(!def) return;
+    def.rows.forEach(r=>{
+      def.groups.forEach(g=> g.forEach(letter=>{
+        seats.push({ id:r+letter, row:r, letter, cls });
+      }));
+    });
+  });
+  return seats;
+}
+
+function classLabel(cls){
+  return cls==='business' ? 'BUSINESS' : cls==='premium' ? 'PREMIUM ECONOMY' : 'ECONOMY';
+}
+function classCodeLetter(cls){
+  return cls==='business' ? 'C' : cls==='premium' ? 'W' : 'Y';
+}
+
+/* ---------- persistent state ---------- */
+let STATE = {
+  flights: [],
+  bookings: [],
+  aircraftRegistry: [],
+  seqCounters: {},
+  bagCounters: {},
+  selection: { flightId:null, pnr:null, passengerKey:null, seatLegId:null }
+};
+
+let applyingRemoteUpdate = false; // guards against re-broadcasting a change we just received
+
+async function loadState(){
+  // 1) fast local cache first, so the UI has something to show immediately
+  try{
+    const raw = localStorage.getItem('tkdcs-state-en');
+    if(raw){ STATE = JSON.parse(raw); }
+  }catch(e){ console.error('local load error', e); }
+
+  // 2) if Supabase is configured, pull the shared copy (source of truth) and subscribe to live changes
+  if(sbClient){
+    try{
+      const { data, error } = await sbClient.from('tkdcs_state').select('data').eq('id', SUPABASE_ROW_ID).maybeSingle();
+      if(error) throw error;
+      if(data && data.data){ STATE = data.data; }
+      subscribeToRemoteChanges();
+    }catch(e){
+      console.error('supabase load error', e);
+      notify('Could not reach the shared database — using this device\'s local copy for now.', 'err');
+    }
+  }
+
+  if(!STATE.aircraftRegistry) STATE.aircraftRegistry = [];
+  if(STATE.flights.length===0) seedDemoData();
+  render();
+}
+
+function saveState(){
+  // local cache: instant, always works even if offline or Supabase isn't configured
+  try{ localStorage.setItem('tkdcs-state-en', JSON.stringify(STATE)); }
+  catch(e){ console.error('local storage error', e); }
+
+  // shared database: fire-and-forget so the UI never waits on network
+  if(sbClient && !applyingRemoteUpdate){
+    sbClient.from('tkdcs_state')
+      .upsert({ id: SUPABASE_ROW_ID, data: STATE, updated_at: new Date().toISOString() })
+      .then(({error})=>{ if(error){ console.error('supabase save error', error); notify('Change saved locally, but syncing to the shared database failed.', 'err'); } });
+  }
+}
+
+let remoteChannel = null;
+function subscribeToRemoteChanges(){
+  if(!sbClient || remoteChannel) return;
+  remoteChannel = sbClient.channel('tkdcs-state-changes')
+    .on('postgres_changes', { event:'*', schema:'public', table:'tkdcs_state', filter:`id=eq.${SUPABASE_ROW_ID}` }, (payload)=>{
+      if(payload.new && payload.new.data){
+        applyingRemoteUpdate = true;
+        STATE = payload.new.data;
+        try{ localStorage.setItem('tkdcs-state-en', JSON.stringify(STATE)); }catch(e){}
+        render();
+        applyingRemoteUpdate = false;
+      }
+    })
+    .subscribe();
+}
+
+function seedDemoData(){
+  STATE.aircraftRegistry = [
+    { reg:"TC-LJA", typeLabel:"Boeing 777-300ER", classes: {
+        business: { rows:[1,2,3,4], groups:[["A"],["C","D"],["G","H"],["K"]] },
+        premium: { rows:range(10,14), groups:[["A","C"],["D","E","F","G"],["H","K"]] },
+        economy: { rows:range(20,46), groups:[["A","B","C"],["D","E","F","G"],["H","J","K"]] }
+    }},
+    { reg:"TC-JOA", typeLabel:"Airbus A321", classes: {
+        business: { rows:[1,2,3], groups:[["A","C"],["D","F"]] },
+        premium: null,
+        economy: { rows:range(4,30), groups:[["A","B","C"],["D","E","F"]] }
+    }}
+  ];
+  STATE.flights = [
+    { id:"f1", flightNo:"TK0186", date:"2026-07-13", from:"ORD", fromCity:"CHICAGO", to:"IST", toCity:"ISTANBUL",
+      tailNumber:"TC-LJA", aircraft:"Boeing 777-300ER", gate:"M14", std:"11:40", boarding:"11:00" },
+    { id:"f2", flightNo:"TK1836", date:"2026-07-13", from:"IST", fromCity:"ISTANBUL", to:"AYT", toCity:"ANTALYA",
+      tailNumber:"TC-JOA", aircraft:"Airbus A321", gate:"D22", std:"14:20", boarding:"13:40" }
+  ];
+  STATE.bookings = [
+    { pnr:"22OVS6", legs:["f2"], passengers:[
+      { key:"p1", title:"MR", surname:"NAVICKAS", given:"DEIVIDAS", cls:"economy",
+        dob:"1994-03-11", passportNumber:"LT1234567", nationality:"LTU", passportExpiry:"2029-05-01",
+        legs:{ f2:{ seat:null, checkedIn:false, seq:null, boarded:false } },
+        bags:0, bagWeights:[], bagTags:[], group:'-' }
+    ]},
+    { pnr:"A69E1E", legs:["f1","f2"], passengers:[
+      { key:"p2", title:"MR", surname:"RUIZ", given:"JUAN", cls:"business",
+        dob:"1987-11-02", passportNumber:"USA9988776", nationality:"USA", passportExpiry:"2027-08-15",
+        legs:{ f1:{ seat:null, checkedIn:false, seq:null, boarded:false }, f2:{ seat:null, checkedIn:false, seq:null, boarded:false } },
+        bags:0, bagWeights:[], bagTags:[], group:'-' }
+    ]}
+  ];
+  saveState();
+}
+
+/* =====================================================================
+   NAVIGATION / RENDER
+===================================================================== */
+const TABS = [
+  {id:"flights", label:"Flight Setup", key:"F1"},
+  {id:"aircraft", label:"Aircraft Registry", key:"F2"},
+  {id:"checkin", label:"Check-In", key:"F3"},
+  {id:"pass", label:"Boarding Pass", key:"F4"},
+  {id:"bagtag", label:"Bag Tag", key:"F5"},
+  {id:"gate", label:"Boarding Gate", key:"F6"},
+  {id:"manifest", label:"PAX Manifest", key:"F7"}
+];
+let activeTab = "flights";
+
+function setTab(id){ activeTab=id; render(); }
+
+function render(){
+  const nav = document.getElementById('modnav');
+  nav.innerHTML = TABS.map(t=>`<button class="${t.id===activeTab?'active':''}" onclick="setTab('${t.id}')"><span class="k">${t.key}</span> ${t.label}</button>`).join('');
+
+  document.getElementById('fkeybar').innerHTML = TABS.map(t=>`<div class="fk"><b>${t.key}</b>${t.label}</div>`).join('') +
+    `<div class="fk"><b>F9</b>Refresh</div>`;
+
+  renderFlightBanner();
+
+  const main = document.getElementById('main');
+  if(activeTab==="flights") main.innerHTML = renderFlights();
+  if(activeTab==="aircraft") main.innerHTML = renderAircraft();
+  if(activeTab==="checkin") main.innerHTML = renderCheckin();
+  if(activeTab==="pass") main.innerHTML = renderPassTab();
+  if(activeTab==="bagtag") main.innerHTML = renderBagTagTab();
+  if(activeTab==="gate") main.innerHTML = renderGate();
+  if(activeTab==="manifest") main.innerHTML = renderManifest();
+  afterRenderHooks();
+}
+
+function renderFlightBanner(){
+  const el = document.getElementById('flightbanner');
+  const flight = STATE.flights.find(f=>f.id===STATE.selection.flightId) || STATE.flights[0];
+  if(!flight){ el.innerHTML = `<span style="color:#9fb8d6">NO ACTIVE FLIGHT</span>`; return; }
+  const bookingsForFlight = STATE.bookings.filter(b=>b.legs.includes(flight.id));
+  const paxAll = bookingsForFlight.reduce((s,b)=>s+b.passengers.length,0);
+  const ci = bookingsForFlight.reduce((s,b)=>s+b.passengers.filter(p=>p.legs[flight.id]?.checkedIn).length,0);
+  const boarded = bookingsForFlight.reduce((s,b)=>s+b.passengers.filter(p=>p.legs[flight.id]?.boarded).length,0);
+  el.innerHTML = `
+    <select onchange="STATE.selection.flightId=this.value;STATE.selection.pnr=null;STATE.selection.passengerKey=null;render()">
+      ${STATE.flights.map(f=>`<option value="${f.id}" ${f.id===flight.id?'selected':''}>${f.flightNo} ${f.from}-${f.to}</option>`).join('')}
+    </select>
+    <div class="fb-item"><label>Route</label><span>${flight.from} → ${flight.to}</span></div>
+    <div class="fb-item"><label>Date</label><span>${flight.date}</span></div>
+    <div class="fb-item"><label>Aircraft</label><span>${flight.aircraft}</span></div>
+    <div class="fb-item"><label>Reg.</label><span>${flight.tailNumber||'—'}</span></div>
+    <div class="fb-item"><label>Gate</label><span>${flight.gate}</span></div>
+    <div class="fb-item"><label>Boarding</label><span>${flight.boarding}</span></div>
+    <div class="fb-item"><label>STD</label><span>${flight.std}</span></div>
+    <div class="fb-item"><label>PAX Booked</label><span>${paxAll}</span></div>
+    <div class="fb-item"><label>Checked-In</label><span>${ci}</span></div>
+    <div class="fb-item"><label>Boarded</label><span>${boarded}</span></div>
+  `;
+}
+
+function afterRenderHooks(){
+  if(activeTab==="checkin") drawSeatmapIfNeeded();
+  drawBoardingPassBarcode();
+  drawBagTagBarcodes();
+  if(activeTab==="gate") initCameraIfNeeded();
+}
+
+/* =====================================================================
+   TAB: FLIGHT SETUP
+===================================================================== */
+function renderFlights(){
+  const rows = STATE.flights.map(f=>{
+    const cnt = STATE.bookings.filter(b=>b.legs.includes(f.id)).reduce((s,b)=>s+b.passengers.length,0);
+    return `<tr>
+      <td><b>${f.flightNo}</b></td><td>${f.date}</td>
+      <td>${f.from} → ${f.to}</td><td>${f.aircraft} <span style="color:#5a6b7d">(${f.tailNumber})</span></td>
+      <td>${f.gate}</td><td>${f.boarding}</td><td>${f.std}</td>
+      <td>${cnt} PAX</td>
+      <td style="white-space:nowrap">
+        <button class="btn small secondary" onclick="STATE.selection.flightId='${f.id}';setTab('checkin')">Check-In →</button>
+        <button class="btn small secondary" onclick="startEditFlight('${f.id}')">Edit</button>
+        <button class="btn small danger" onclick="deleteFlight('${f.id}')">${pendingDeleteFlightId===f.id?'Confirm Delete?':'Delete'}</button>
+        ${pendingDeleteFlightId===f.id?`<button class="btn small secondary" onclick="cancelDeleteFlight()">Cancel</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  const regOptions = STATE.aircraftRegistry.map(a=>`<option value="${a.reg}">${a.reg} — ${a.typeLabel}</option>`).join('');
+  const ef = editingFlightId ? STATE.flights.find(f=>f.id===editingFlightId) : null;
+
+  return `
+  <div class="panel">
+    <div class="panel-title">Flight List</div>
+    <div class="panel-body">
+    <table>
+      <thead><tr><th>Flight</th><th>Date</th><th>Route</th><th>Aircraft (Reg.)</th><th>Gate</th><th>Boarding</th><th>STD</th><th>PAX</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="9" class="empty">No flights created yet</td></tr>'}</tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">${ef ? 'Edit Flight — '+ef.flightNo : 'Create Flight'}</div>
+    <div class="panel-body">
+    <div class="row">
+      <div class="field"><label>Flight No.</label><input id="nf-no" placeholder="TK0123" value="${ef?ef.flightNo:''}"></div>
+      <div class="field"><label>Date</label><input id="nf-date" type="date" value="${ef?ef.date:''}"></div>
+      <div class="field"><label>From (IATA)</label><input id="nf-from" maxlength="3" placeholder="IST" value="${ef?ef.from:''}"></div>
+      <div class="field"><label>From City</label><input id="nf-fromcity" placeholder="ISTANBUL" value="${ef?ef.fromCity:''}"></div>
+      <div class="field"><label>To (IATA)</label><input id="nf-to" maxlength="3" placeholder="AYT" value="${ef?ef.to:''}"></div>
+      <div class="field"><label>To City</label><input id="nf-tocity" placeholder="ANTALYA" value="${ef?ef.toCity:''}"></div>
+      <div class="field"><label>Aircraft (by Registration)</label>
+        <select id="nf-aircraft">${STATE.aircraftRegistry.map(a=>`<option value="${a.reg}" ${ef&&ef.tailNumber===a.reg?'selected':''}>${a.reg} — ${a.typeLabel}</option>`).join('') || '<option value="">— none registered —</option>'}</select>
+      </div>
+      <div class="field"><label>Gate</label><input id="nf-gate" placeholder="D22" value="${ef&&ef.gate!=='-'?ef.gate:''}"></div>
+      <div class="field"><label>Boarding</label><input id="nf-board" type="time" value="${ef&&ef.boarding!=='--:--'?ef.boarding:''}"></div>
+      <div class="field"><label>STD</label><input id="nf-std" type="time" value="${ef&&ef.std!=='--:--'?ef.std:''}"></div>
+      ${ef
+        ? `<button class="btn" onclick="saveFlightEdit()">Save Changes</button><button class="btn secondary" onclick="cancelEditFlight()">Cancel</button>`
+        : `<button class="btn" ${STATE.aircraftRegistry.length?'':'disabled'} onclick="addFlight()">+ Add Flight</button>`}
+    </div>
+    ${STATE.aircraftRegistry.length? '' : '<small class="hint">Register an aircraft first in the Aircraft Registry tab (F2) before creating a flight.</small>'}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Create PNR (single flight or transfer, up to 3 legs)</div>
+    <div class="panel-body">
+    <div class="row">
+      <div class="field"><label>PNR (auto)</label>
+        <input id="cp-pnr" value="${pnrDraft.pnr}" maxlength="6" style="text-transform:uppercase;width:90px" oninput="pnrDraft.pnr=this.value.toUpperCase()">
+      </div>
+      <button class="btn secondary small" onclick="regenDraftPnr()">🔄 Regenerate</button>
+      <div class="field"><label>Flight Leg 1</label>
+        <select onchange="setDraftLeg(1,this.value)">
+          <option value="">— select —</option>
+          ${STATE.flights.map(f=>`<option value="${f.id}" ${pnrDraft.leg1===f.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Flight Leg 2 (transfer)</label>
+        <select onchange="setDraftLeg(2,this.value)" ${pnrDraft.leg1?'':'disabled'}>
+          <option value="">— none (direct) —</option>
+          ${STATE.flights.map(f=>`<option value="${f.id}" ${pnrDraft.leg2===f.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Flight Leg 3 (2nd transfer)</label>
+        <select onchange="setDraftLeg(3,this.value)" ${pnrDraft.leg2?'':'disabled'}>
+          <option value="">— none —</option>
+          ${STATE.flights.map(f=>`<option value="${f.id}" ${pnrDraft.leg3===f.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <small class="hint">${draftRouteSummary()}</small>
+
+    <table style="margin-top:12px">
+      <thead><tr><th>Title</th><th>Surname</th><th>Given Name</th><th>DOB</th><th>Passport No.</th><th>Nat.</th><th>Expiry</th><th>Class</th><th></th></tr></thead>
+      <tbody>
+        ${pnrDraft.rows.map((r,i)=>`
+        <tr>
+          <td><select style="min-width:70px" onchange="updateDraftRow(${i},'title',this.value)">
+            ${['MR','MRS','CHD'].map(t=>`<option value="${t}" ${r.title===t?'selected':''}>${t}</option>`).join('')}
+          </select></td>
+          <td><input value="${r.surname}" style="width:110px" oninput="updateDraftRow(${i},'surname',this.value.toUpperCase())"></td>
+          <td><input value="${r.given}" style="width:110px" oninput="updateDraftRow(${i},'given',this.value.toUpperCase())"></td>
+          <td><input type="date" value="${r.dob}" style="width:135px" onchange="updateDraftRow(${i},'dob',this.value)"></td>
+          <td><input value="${r.passport}" style="width:100px" oninput="updateDraftRow(${i},'passport',this.value.toUpperCase())"></td>
+          <td><input value="${r.nationality}" maxlength="3" style="width:50px" oninput="updateDraftRow(${i},'nationality',this.value.toUpperCase())"></td>
+          <td><input type="date" value="${r.expiry}" style="width:135px" onchange="updateDraftRow(${i},'expiry',this.value)"></td>
+          <td><select style="min-width:130px" onchange="updateDraftRow(${i},'cls',this.value)">
+            <option value="economy" ${r.cls==='economy'?'selected':''}>Economy</option>
+            <option value="premium" ${r.cls==='premium'?'selected':''}>Premium Economy</option>
+            <option value="business" ${r.cls==='business'?'selected':''}>Business</option>
+          </select></td>
+          <td><button class="btn danger small" ${pnrDraft.rows.length<=1?'disabled':''} onclick="removeDraftRow(${i})">✕</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="row" style="margin-top:10px">
+      <button class="btn secondary small" onclick="addDraftRow()">+ Add Passenger Row</button>
+      <button class="btn" ${pnrDraft.leg1?'':'disabled'} onclick="submitCreatePnr()">Create PNR</button>
+    </div>
+    <small class="hint">All passengers listed above are created together under one PNR, attached to every selected flight leg. Baggage entered later at Check-In is tagged through to the final destination automatically.</small>
+    </div>
+  </div>
+  `;
+}
+
+let pnrDraft = newPnrDraft();
+function newPnrDraft(){
+  return { pnr: genPNR(), leg1:'', leg2:'', leg3:'',
+    rows:[{title:'MR',surname:'',given:'',dob:'',passport:'',nationality:'',expiry:'',cls:'economy'}] };
+}
+function regenDraftPnr(){ pnrDraft.pnr = genPNR(); render(); }
+function setDraftLeg(n,v){
+  if(n===1){ pnrDraft.leg1=v; if(!v){ pnrDraft.leg2=''; pnrDraft.leg3=''; } }
+  if(n===2){ pnrDraft.leg2=v; if(!v) pnrDraft.leg3=''; }
+  if(n===3){ pnrDraft.leg3=v; }
+  render();
+}
+function draftRouteSummary(){
+  const ids = [pnrDraft.leg1,pnrDraft.leg2,pnrDraft.leg3].filter(Boolean);
+  if(ids.length===0) return 'Select at least Flight Leg 1 to begin.';
+  const legs = ids.map(id=>STATE.flights.find(f=>f.id===id)).filter(Boolean);
+  if(legs.length!==ids.length) return 'One of the selected legs no longer exists.';
+  const chain = legs.map(f=>f.from).concat([legs[legs.length-1].to]).join(' → ');
+  return `Routing: ${chain} across ${legs.map(f=>f.flightNo).join(' / ')}.`;
+}
+function addDraftRow(){
+  pnrDraft.rows.push({title:'MR',surname:'',given:'',dob:'',passport:'',nationality:'',expiry:'',cls:'economy'});
+  render();
+}
+function removeDraftRow(i){
+  if(pnrDraft.rows.length<=1) return;
+  pnrDraft.rows.splice(i,1); render();
+}
+function updateDraftRow(i,field,v){ pnrDraft.rows[i][field]=v; }
+
+function submitCreatePnr(){
+  const legIds = [pnrDraft.leg1,pnrDraft.leg2,pnrDraft.leg3].filter(Boolean);
+  if(legIds.length===0) return notify('Select at least Flight Leg 1.');
+  const pnr = (pnrDraft.pnr||genPNR()).toUpperCase();
+  if(STATE.bookings.some(b=>b.pnr===pnr)) return notify('This PNR already exists — regenerate or choose a different one.');
+  const validRows = pnrDraft.rows.filter(r=>r.surname.trim());
+  if(validRows.length===0) return notify('Add at least one passenger with a surname.');
+
+  const legsState = {};
+  legIds.forEach(id=>{ legsState[id] = { seat:null, checkedIn:false, seq:null, boarded:false }; });
+
+  const passengers = validRows.map(r=>({
+    key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
+    title:r.title, surname:r.surname.toUpperCase(), given:(r.given||'GIVENNAME').toUpperCase(),
+    dob:r.dob, passportNumber:r.passport.toUpperCase(), nationality:r.nationality.toUpperCase(), passportExpiry:r.expiry,
+    cls:r.cls, group:'-',
+    legs: JSON.parse(JSON.stringify(legsState)),
+    bags:0, bagWeights:[], bagTags:[]
+  }));
+
+  STATE.bookings.push({ pnr, legs:legIds, passengers });
+  pnrDraft = newPnrDraft();
+  saveState(); render();
+}
+let toastTimer = null;
+function notify(msg, type){
+  type = type || 'err';
+  const el = document.getElementById('toastbar');
+  if(!el) return;
+  el.innerHTML = `<div class="toast ${type}"><span>${msg}</span><button onclick="document.getElementById('toastbar').innerHTML=''">✕</button></div>`;
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.innerHTML=''; }, 4500);
+}
+
+function val(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
+
+let editingFlightId = null;
+
+function validateFlightForm(){
+  const no = val('nf-no'), date = val('nf-date'), from = val('nf-from').toUpperCase(), to = val('nf-to').toUpperCase(), reg = val('nf-aircraft');
+  if(!no) return 'Enter a flight number.';
+  if(!date) return 'Select a date.';
+  if(from.length!==3) return 'From (IATA) must be exactly 3 letters.';
+  if(to.length!==3) return 'To (IATA) must be exactly 3 letters.';
+  if(from===to) return 'From and To cannot be the same airport.';
+  if(!reg) return 'Select a registered aircraft (register one first in Aircraft Registry if the list is empty).';
+  return null;
+}
+
+function addFlight(){
+  const err = validateFlightForm();
+  if(err) return notify(err);
+  const id = 'f'+Date.now();
+  const reg = val('nf-aircraft');
+  const ac = getAircraftByReg(reg);
+  STATE.flights.push({
+    id, flightNo:val('nf-no'), date:val('nf-date'),
+    from:val('nf-from').toUpperCase(), fromCity:(val('nf-fromcity')||val('nf-from')).toUpperCase(),
+    to:val('nf-to').toUpperCase(), toCity:(val('nf-tocity')||val('nf-to')).toUpperCase(),
+    tailNumber: reg, aircraft: ac?ac.typeLabel:'UNKNOWN',
+    gate: val('nf-gate')||'-', boarding: val('nf-board')||'--:--', std: val('nf-std')||'--:--'
+  });
+  saveState(); render();
+}
+
+function startEditFlight(id){ editingFlightId = id; render(); }
+function cancelEditFlight(){ editingFlightId = null; render(); }
+
+function saveFlightEdit(){
+  const err = validateFlightForm();
+  if(err) return notify(err);
+  const f = STATE.flights.find(x=>x.id===editingFlightId);
+  if(!f) { editingFlightId=null; return render(); }
+  const reg = val('nf-aircraft');
+  const ac = getAircraftByReg(reg);
+  f.flightNo = val('nf-no'); f.date = val('nf-date');
+  f.from = val('nf-from').toUpperCase(); f.fromCity = (val('nf-fromcity')||val('nf-from')).toUpperCase();
+  f.to = val('nf-to').toUpperCase(); f.toCity = (val('nf-tocity')||val('nf-to')).toUpperCase();
+  f.tailNumber = reg; f.aircraft = ac?ac.typeLabel:'UNKNOWN';
+  f.gate = val('nf-gate')||'-'; f.boarding = val('nf-board')||'--:--'; f.std = val('nf-std')||'--:--';
+  editingFlightId = null;
+  saveState(); render();
+}
+
+let pendingDeleteFlightId = null;
+function deleteFlight(id){
+  const inUse = STATE.bookings.some(b=>b.legs.includes(id));
+  if(inUse) return notify('This flight is used by one or more PNRs and cannot be deleted. Delete or edit those PNRs first.');
+  if(pendingDeleteFlightId!==id){ pendingDeleteFlightId=id; render(); return; }
+  STATE.flights = STATE.flights.filter(f=>f.id!==id);
+  pendingDeleteFlightId = null;
+  if(editingFlightId===id) editingFlightId = null;
+  if(STATE.selection.flightId===id) STATE.selection.flightId = STATE.flights[0]?.id || null;
+  saveState(); render();
+}
+function cancelDeleteFlight(){ pendingDeleteFlightId=null; render(); }
+
+function genPNR(){ const chars='ABCDEFGHJKLMNPQRSTUVWXYZ0123456789'; let s=''; for(let i=0;i<6;i++) s+=chars[Math.floor(Math.random()*chars.length)]; return s; }
+
+function apisStatus(p,f){
+  if(!p.passportNumber || !p.nationality || !p.passportExpiry || !p.dob) return {ok:false, reason:'Passport data incomplete'};
+  const flightDate = new Date(f.date+"T00:00:00");
+  const expiry = new Date(p.passportExpiry+"T00:00:00");
+  if(isNaN(expiry.getTime())) return {ok:false, reason:'Invalid expiry date'};
+  if(expiry < flightDate) return {ok:false, reason:'Passport expired before flight date'};
+  return {ok:true, reason:'Passport valid'};
+}
+
+/* =====================================================================
+   TAB: AIRCRAFT REGISTRY (cabin layout by tail number)
+===================================================================== */
+function renderAircraft(){
+  const rows = STATE.aircraftRegistry.map(a=>{
+    const biz = a.classes.business ? a.classes.business.rows.length : 0;
+    const prem = a.classes.premium ? a.classes.premium.rows.length : 0;
+    const eco = a.classes.economy ? a.classes.economy.rows.length : 0;
+    const seatCount = ['business','premium','economy'].reduce((s,c)=> s + (a.classes[c]? a.classes[c].rows.length*a.classes[c].groups.reduce((x,g)=>x+g.length,0) : 0), 0);
+    const usedBy = STATE.flights.filter(f=>f.tailNumber===a.reg).length;
+    return `<tr>
+      <td><b>${a.reg}</b></td><td>${a.typeLabel}</td>
+      <td>${biz?'rows '+a.classes.business.rows[0]+'-'+a.classes.business.rows.slice(-1):'—'}</td>
+      <td>${prem?'rows '+a.classes.premium.rows[0]+'-'+a.classes.premium.rows.slice(-1):'—'}</td>
+      <td>${eco?'rows '+a.classes.economy.rows[0]+'-'+a.classes.economy.rows.slice(-1):'—'}</td>
+      <td>${seatCount}</td>
+      <td>${usedBy} flight(s)</td>
+      <td><button class="btn small danger" ${usedBy?'disabled title="In use by a flight"':''} onclick="deleteAircraft('${a.reg}')">Delete</button></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="panel">
+    <div class="panel-title">Registered Aircraft (by Tail Number)</div>
+    <div class="panel-body">
+    <table>
+      <thead><tr><th>Reg.</th><th>Type</th><th>Business</th><th>Premium Eco.</th><th>Economy</th><th>Total Seats</th><th>Used On</th><th></th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="8" class="empty">No aircraft registered yet</td></tr>'}</tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Register Aircraft / Build Cabin Layout</div>
+    <div class="panel-body">
+    <div class="row">
+      <div class="field"><label>Registration (Tail No.)</label><input id="ac-reg" placeholder="TC-LJB" style="text-transform:uppercase"></div>
+      <div class="field"><label>Aircraft Type</label><input id="ac-type" placeholder="Boeing 777-300ER"></div>
+      <button class="btn secondary small" onclick="prefillPreset('Narrowbody (A321)')">Prefill: Narrowbody A321</button>
+      <button class="btn secondary small" onclick="prefillPreset('Widebody (B777-300ER)')">Prefill: Widebody B777</button>
+      <button class="btn secondary small" onclick="clearAcForm()">Clear</button>
+    </div>
+
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+      <div class="row">
+        <div class="field"><label><input type="checkbox" id="ac-biz-on" checked style="min-width:auto;width:auto"> Business</label></div>
+        <div class="field"><label>Row Start</label><input id="ac-biz-start" type="number" min="1" style="width:70px"></div>
+        <div class="field"><label>Row End</label><input id="ac-biz-end" type="number" min="1" style="width:70px"></div>
+        <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-biz-groups" placeholder="A|CD|GH|K" style="width:160px"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><label><input type="checkbox" id="ac-prem-on" style="min-width:auto;width:auto"> Premium Economy</label></div>
+        <div class="field"><label>Row Start</label><input id="ac-prem-start" type="number" min="1" style="width:70px"></div>
+        <div class="field"><label>Row End</label><input id="ac-prem-end" type="number" min="1" style="width:70px"></div>
+        <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-prem-groups" placeholder="AC|DEFG|HK" style="width:160px"></div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div class="field"><label><input type="checkbox" id="ac-eco-on" checked style="min-width:auto;width:auto"> Economy</label></div>
+        <div class="field"><label>Row Start</label><input id="ac-eco-start" type="number" min="1" style="width:70px"></div>
+        <div class="field"><label>Row End</label><input id="ac-eco-end" type="number" min="1" style="width:70px"></div>
+        <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-eco-groups" placeholder="ABC|DEFG|HJK" style="width:160px"></div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="addAircraft()">+ Save Aircraft to Registry</button>
+    </div>
+    <small class="hint">Seat Groups pattern: letters within a block sit together, "|" marks an aisle. Example "A|CD|GH|K" renders a 1-2-2-1 wide-body business layout across the row range you set.</small>
+    </div>
+  </div>
+  `;
+}
+
+function prefillPreset(name){
+  const tpl = AIRCRAFT_PRESETS[name];
+  setIfExists('ac-type', name.replace(/\s*\(.*\)/,''));
+  const set = (cls, prefix)=>{
+    const def = tpl[cls];
+    const onBox = document.getElementById(`ac-${prefix}-on`);
+    if(!def){ if(onBox) onBox.checked=false; return; }
+    if(onBox) onBox.checked=true;
+    setIfExists(`ac-${prefix}-start`, def.rows[0]);
+    setIfExists(`ac-${prefix}-end`, def.rows[def.rows.length-1]);
+    setIfExists(`ac-${prefix}-groups`, groupsToPattern(def.groups));
+  };
+  set('business','biz'); set('premium','prem'); set('economy','eco');
+}
+function setIfExists(id,v){ const e=document.getElementById(id); if(e) e.value=v; }
+function clearAcForm(){
+  ['ac-reg','ac-type','ac-biz-start','ac-biz-end','ac-biz-groups','ac-prem-start','ac-prem-end','ac-prem-groups','ac-eco-start','ac-eco-end','ac-eco-groups']
+    .forEach(id=>setIfExists(id,''));
+}
+
+function addAircraft(){
+  const reg = val('ac-reg').toUpperCase();
+  if(!reg) return notify('Enter a registration (tail number).');
+  if(getAircraftByReg(reg)) return notify('This registration already exists in the registry.');
+  const typeLabel = val('ac-type') || reg;
+
+  function readClass(prefix){
+    const on = document.getElementById(`ac-${prefix}-on`).checked;
+    if(!on) return null;
+    const start = parseInt(val(`ac-${prefix}-start`));
+    const end = parseInt(val(`ac-${prefix}-end`));
+    const groups = parseGroups(val(`ac-${prefix}-groups`)||'');
+    if(!start || !end || end<start || groups.length===0) return null;
+    return { rows: range(start,end), groups };
+  }
+
+  const classes = {
+    business: readClass('biz'),
+    premium: readClass('prem'),
+    economy: readClass('eco')
+  };
+  if(!classes.business && !classes.premium && !classes.economy){
+    return notify('Define at least one valid cabin class (row range + seat groups).');
+  }
+  STATE.aircraftRegistry.push({ reg, typeLabel, classes });
+  saveState(); render();
+}
+
+function deleteAircraft(reg){
+  if(STATE.flights.some(f=>f.tailNumber===reg)) return notify('This aircraft is assigned to a flight and cannot be deleted.');
+  STATE.aircraftRegistry = STATE.aircraftRegistry.filter(a=>a.reg!==reg);
+  saveState(); render();
+}
+
+
+function renderCheckin(){
+  const flight = STATE.flights.find(f=>f.id===STATE.selection.flightId) || STATE.flights[0];
+  if(!flight) return `<div class="panel"><div class="panel-body empty">Create a flight first (Flight Setup tab).</div></div>`;
+  STATE.selection.flightId = flight.id;
+
+  const bookingsForFlight = STATE.bookings.filter(b=>b.legs.includes(flight.id));
+  const pnrOptions = bookingsForFlight.map(b=>`<option value="${b.pnr}">${b.pnr} — ${legChainLabel(b)} (${b.passengers.length} PAX)</option>`).join('');
+  const pnr = STATE.selection.pnr && bookingsForFlight.find(b=>b.pnr===STATE.selection.pnr) ? STATE.selection.pnr : (bookingsForFlight[0]?.pnr);
+  STATE.selection.pnr = pnr;
+  const booking = bookingsForFlight.find(b=>b.pnr===pnr);
+
+  let paxHtml = '';
+  if(booking){
+    paxHtml = booking.passengers.map(p=>{
+      const bw = p.bagWeights || [];
+      const totalWt = bw.reduce((s,w)=>s+w,0);
+      const bagRows = bw.map((w,i)=>`
+        <span style="display:inline-flex;align-items:center;gap:3px;background:#eef1f5;border:1px solid var(--border);border-radius:2px;padding:2px 4px;">
+          <input type="number" min="0" max="60" step="0.5" value="${w}" style="width:52px;min-width:52px;padding:3px 4px;font-size:11px" onchange="setBagWeight('${booking.pnr}','${p.key}',${i},this.value)">kg
+          <button class="btn danger small" style="padding:2px 6px;font-size:10px" onclick="removeBagRow('${booking.pnr}','${p.key}',${i})">✕</button>
+        </span>`).join('');
+      const apis = apisStatus(p, flight);
+      const legState = p.legs[flight.id] || {seat:null,checkedIn:false,seq:null,boarded:false};
+      const isMultiLeg = booking.legs.length>1;
+      const seatLegId = STATE.selection.seatLegId && booking.legs.includes(STATE.selection.seatLegId) ? STATE.selection.seatLegId : flight.id;
+      const itinRow = booking.legs.map(fid=>{
+        const lf = STATE.flights.find(x=>x.id===fid);
+        const ls = p.legs[fid] || {};
+        const isCurrent = fid===flight.id;
+        const isEditingSeat = fid===seatLegId && STATE.selection.passengerKey===p.key;
+        return `<span class="badge ${ls.boarded?'boarded':ls.checkedIn?'ok':'pending'}" style="${isCurrent?'outline:2px solid var(--accent);outline-offset:1px;':''}">${lf?lf.flightNo:'?'} ${ls.seat||'–'} ${ls.boarded?'BOARDED':ls.checkedIn?'CI':'—'}</span>
+          <button class="btn small secondary" style="${isEditingSeat?'outline:2px solid var(--accent);':''}" onclick="startSeatSelectForLeg('${booking.pnr}','${p.key}','${fid}')">Seat: ${lf?lf.flightNo:'?'}</button>`;
+      }).join(' ');
+      const allChecked = booking.legs.every(fid=> p.legs[fid]?.checkedIn);
+
+      const checkedLegs = booking.legs.filter(fid=> p.legs[fid]?.checkedIn);
+      let printBlock = '';
+      if(checkedLegs.length>0 || (p.bagTags && p.bagTags.length>0)){
+        printBlock += `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
+          <span style="font-size:10.5px;font-weight:700;color:#3a4553;text-transform:uppercase;">Print:</span>`;
+        checkedLegs.forEach(fid=>{
+          const lf = STATE.flights.find(x=>x.id===fid);
+          printBlock += `<button class="btn secondary small" onclick="printEl('inline-bp-${p.key}-${fid}')">🖶 Boarding Pass ${lf?lf.flightNo:''}</button>`;
+        });
+        (p.bagTags||[]).forEach((bt,i)=>{
+          printBlock += `<button class="btn secondary small" onclick="printEl('inline-bt-${p.key}-${i}')">🖶 Bag Tag #${i+1}</button>`;
+        });
+        printBlock += `</div>`;
+        // hidden (off-screen) print targets — kept in the DOM so printEl() can print them straight from this page
+        checkedLegs.forEach(fid=>{
+          const lf = STATE.flights.find(x=>x.id===fid);
+          const flat = flattenPaxForLeg(p, p.legs[fid], booking.pnr);
+          printBlock += `<div class="offscreen-print"><div id="inline-bp-${p.key}-${fid}" class="print-target">${boardingPassHTML(flat, lf)}</div></div>`;
+        });
+        if(p.bagTags && p.bagTags.length){
+          const legsChain = booking.legs.map(id=>STATE.flights.find(f=>f.id===id)).filter(Boolean);
+          p.bagTags.forEach((bt,i)=>{
+            printBlock += `<div class="offscreen-print"><div id="inline-bt-${p.key}-${i}" class="print-target">${bagTagHTML(p, legsChain, bt.lp, bt.weight, i+1)}</div></div>`;
+          });
+        }
+      }
+
+      return `
+      <div class="pax-card" style="flex-direction:column;align-items:stretch;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <div class="name">${p.surname}/${p.given}</div>
+          <div class="field"><label>Title</label>
+            <select style="width:70px" ${legState.checkedIn?'disabled':''} onchange="setPaxTitle('${booking.pnr}','${p.key}',this.value)">
+              ${['MR','MRS','CHD'].map(t=>`<option value="${t}" ${p.title===t?'selected':''}>${t}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field"><label>Class</label>
+            <select style="width:130px" ${legState.checkedIn?'disabled':''} onchange="setPaxClass('${booking.pnr}','${p.key}',this.value)">
+              <option value="economy" ${p.cls==='economy'?'selected':''}>Economy</option>
+              <option value="premium" ${p.cls==='premium'?'selected':''}>Premium Economy</option>
+              <option value="business" ${p.cls==='business'?'selected':''}>Business</option>
+            </select>
+          </div>
+          <div class="field"><label>Boarding Group</label>
+            <select style="width:70px" onchange="setPaxGroup('${booking.pnr}','${p.key}',this.value)">
+              ${['-','1','2','3','4','5'].map(g=>`<option value="${g}" ${p.group===g?'selected':''}>${g==='-'?'—':'Group '+g}</option>`).join('')}
+            </select>
+          </div>
+          <span class="badge ${legState.checkedIn?'ok':'pending'}">${legState.checkedIn?'CHECKED-IN #'+legState.seq:'NOT CHECKED-IN'}</span>
+          ${!legState.checkedIn ? `<button class="btn small" onclick="checkInPassengerLeg('${booking.pnr}','${p.key}','${flight.id}')">Check-In This Leg</button>` : `<span class="badge ${legState.boarded?'boarded':'ok'}">${legState.boarded?'BOARDED':'BP + Bag Tag ready'}</span>`}
+          ${isMultiLeg && !allChecked ? `<button class="btn small" onclick="checkInAllLegsThrough('${booking.pnr}','${p.key}')">Check-In All Legs (Through)</button>` : ''}
+          ${booking.legs.every(fid=>!p.legs[fid]?.checkedIn) ? `<button class="btn small danger" onclick="removePaxFromPnr('${booking.pnr}','${p.key}')">${pendingRemovePaxKey===p.key?'Confirm Remove?':'Remove'}</button>${pendingRemovePaxKey===p.key?`<button class="btn small secondary" onclick="cancelRemovePax()">Cancel</button>`:''}` : ''}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;">
+          <span style="font-size:10.5px;font-weight:700;color:#3a4553;text-transform:uppercase;">${isMultiLeg?'Itinerary':'Seat'}:</span>${itinRow}
+        </div>
+        ${printBlock}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
+          <span style="font-size:10.5px;font-weight:700;color:#3a4553;text-transform:uppercase;">Baggage — through to final destination (${bw.length} pc / ${totalWt.toFixed(1)}kg):</span>
+          ${bagRows || '<span style="font-size:11px;color:#5a6b7d">no bags added</span>'}
+          <button class="btn secondary small" ${p.bagTags.length?'disabled title="Already tagged"':''} onclick="addBagRow('${booking.pnr}','${p.key}')">+ Add Bag (23kg)</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
+          <span style="font-size:10.5px;font-weight:700;color:#3a4553;text-transform:uppercase;">Passport / APIS:</span>
+          <div class="field"><label>DOB</label><input type="date" value="${p.dob||''}" style="width:130px" ${legState.checkedIn?'disabled':''} onchange="setPaxPassport('${booking.pnr}','${p.key}','dob',this.value)"></div>
+          <div class="field"><label>Passport No.</label><input value="${p.passportNumber||''}" style="width:110px;text-transform:uppercase" ${legState.checkedIn?'disabled':''} onchange="setPaxPassport('${booking.pnr}','${p.key}','passportNumber',this.value.toUpperCase())"></div>
+          <div class="field"><label>Nationality</label><input value="${p.nationality||''}" maxlength="3" style="width:60px;text-transform:uppercase" ${legState.checkedIn?'disabled':''} onchange="setPaxPassport('${booking.pnr}','${p.key}','nationality',this.value.toUpperCase())"></div>
+          <div class="field"><label>Expiry</label><input type="date" value="${p.passportExpiry||''}" style="width:130px" ${legState.checkedIn?'disabled':''} onchange="setPaxPassport('${booking.pnr}','${p.key}','passportExpiry',this.value)"></div>
+          <span class="badge ${apis.ok?'ok':'pending'}" title="${apis.reason}">${apis.ok?'APIS OK':'APIS FAIL'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const seatLegForPanel = STATE.selection.seatLegId ? STATE.flights.find(f=>f.id===STATE.selection.seatLegId) : flight;
+  const seatSel = STATE.selection.passengerKey ? `<div id="seatmap-container"></div>` : `<div class="empty">Click a "Seat: TK...." button next to a passenger to view that leg's seat chart.</div>`;
+
+  return `
+  <div class="panel">
+    <div class="panel-title">Find Passenger by Surname</div>
+    <div class="panel-body">
+    <div class="row">
+      <div class="field" style="flex:1;min-width:220px"><label>Surname (this flight only)</label>
+        <input id="pax-search" placeholder="Type a surname…" value="${paxSearchQuery.replace(/"/g,'&quot;')}" oninput="onPaxSearchInput(this.value)" style="width:100%;min-width:220px">
+      </div>
+    </div>
+    <div id="pax-search-results" style="margin-top:8px">${renderPaxSearchResultsHTML()}</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Passengers — PNR Selection</div>
+    <div class="panel-body">
+    <div class="row">
+      <div class="field"><label>PNR</label>
+        <select onchange="STATE.selection.pnr=this.value;STATE.selection.passengerKey=null;addPaxFormOpen=false;render()">${pnrOptions || '<option>—</option>'}</select>
+      </div>
+      ${booking ? `<button class="btn small danger" onclick="deletePnr('${booking.pnr}')">${pendingDeletePnr===booking.pnr?'Confirm Delete?':'Delete This PNR'}</button>${pendingDeletePnr===booking.pnr?`<button class="btn small secondary" onclick="cancelDeletePnr()">Cancel</button>`:''}` : ''}
+    </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Passengers (PNR ${pnr||'—'}) ${booking && booking.legs.length>1 ? '— '+legChainLabel(booking)+' (transfer)' : ''}</div>
+    <div class="panel-body">
+    <div class="pax-list">${paxHtml || '<div class="empty">No passengers under a PNR for this flight yet. Create one in Flight Setup.</div>'}</div>
+    ${booking ? `
+    <div style="margin-top:10px">
+      <button class="btn secondary small" onclick="toggleAddPaxForm()">${addPaxFormOpen?'✕ Cancel':'+ Add Passenger to this PNR'}</button>
+    </div>
+    ${addPaxFormOpen ? `
+    <div class="row" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
+      <div class="field"><label>Title</label>
+        <select id="ap-title"><option>MR</option><option>MRS</option><option>CHD</option></select>
+      </div>
+      <div class="field"><label>Surname</label><input id="ap-surname" placeholder="SURNAME"></div>
+      <div class="field"><label>Given Name</label><input id="ap-given" placeholder="GIVEN"></div>
+      <div class="field"><label>DOB</label><input id="ap-dob" type="date"></div>
+      <div class="field"><label>Passport No.</label><input id="ap-passport"></div>
+      <div class="field"><label>Nat.</label><input id="ap-nationality" maxlength="3" style="width:60px"></div>
+      <div class="field"><label>Expiry</label><input id="ap-expiry" type="date"></div>
+      <div class="field"><label>Class</label>
+        <select id="ap-cls"><option value="economy">Economy</option><option value="premium">Premium Economy</option><option value="business">Business</option></select>
+      </div>
+      <button class="btn small" onclick="addPaxToExistingPnr('${booking.pnr}')">+ Add to PNR</button>
+    </div>` : ''}
+    ` : ''}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Aircraft Seatmap — ${seatLegForPanel ? seatLegForPanel.aircraft+' ('+seatLegForPanel.tailNumber+') — '+seatLegForPanel.flightNo : ''}</div>
+    <div class="panel-body">
+    ${seatSel}
+    </div>
+  </div>
+  `;
+}
+
+let addPaxFormOpen = false;
+function toggleAddPaxForm(){ addPaxFormOpen = !addPaxFormOpen; render(); }
+
+let pendingDeletePnr = null;
+function deletePnr(pnr){
+  const booking = STATE.bookings.find(b=>b.pnr===pnr);
+  if(!booking) return;
+  if(pendingDeletePnr!==pnr){
+    pendingDeletePnr=pnr;
+    const anyCheckedIn = booking.passengers.some(p=> Object.values(p.legs).some(l=>l.checkedIn));
+    if(anyCheckedIn) notify('This PNR has checked-in passenger(s) — confirming will discard their boarding passes and bag tags.', 'err');
+    render(); return;
+  }
+  STATE.bookings = STATE.bookings.filter(b=>b.pnr!==pnr);
+  pendingDeletePnr = null;
+  STATE.selection.pnr = null; STATE.selection.passengerKey = null;
+  saveState(); render();
+}
+function cancelDeletePnr(){ pendingDeletePnr=null; render(); }
+
+function addPaxToExistingPnr(pnr){
+  const booking = STATE.bookings.find(b=>b.pnr===pnr);
+  if(!booking) return;
+  const surname = val('ap-surname');
+  if(!surname) return notify('Enter a surname.');
+  const legsState = {};
+  booking.legs.forEach(fid=>{ legsState[fid] = { seat:null, checkedIn:false, seq:null, boarded:false }; });
+  booking.passengers.push({
+    key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
+    title: val('ap-title'), surname: surname.toUpperCase(), given:(val('ap-given')||'GIVENNAME').toUpperCase(),
+    dob: val('ap-dob'), passportNumber: val('ap-passport').toUpperCase(), nationality: val('ap-nationality').toUpperCase(),
+    passportExpiry: val('ap-expiry'), cls: val('ap-cls'), group:'-',
+    legs: legsState, bags:0, bagWeights:[], bagTags:[]
+  });
+  addPaxFormOpen = false;
+  saveState(); render();
+}
+
+let pendingRemovePaxKey = null;
+function removePaxFromPnr(pnr,key){
+  const booking = STATE.bookings.find(b=>b.pnr===pnr);
+  if(!booking) return;
+  const pax = booking.passengers.find(p=>p.key===key);
+  const anyCheckedIn = pax && Object.values(pax.legs).some(l=>l.checkedIn);
+  if(anyCheckedIn) return notify('This passenger is already checked in on at least one leg and cannot be removed. Delete the whole PNR if needed.');
+  if(pendingRemovePaxKey!==key){ pendingRemovePaxKey=key; render(); return; }
+  booking.passengers = booking.passengers.filter(p=>p.key!==key);
+  pendingRemovePaxKey = null;
+  if(booking.passengers.length===0){ STATE.bookings = STATE.bookings.filter(b=>b.pnr!==pnr); STATE.selection.pnr=null; }
+  saveState(); render();
+}
+function cancelRemovePax(){ pendingRemovePaxKey=null; render(); }
+
+function legChainLabel(booking){
+  const legs = booking.legs.map(id=>STATE.flights.find(f=>f.id===id)).filter(Boolean);
+  if(legs.length===0) return '—';
+  return legs.map(f=>f.flightNo).join('→');
+}
+
+let paxSearchQuery = '';
+function onPaxSearchInput(v){
+  paxSearchQuery = v;
+  const el = document.getElementById('pax-search-results');
+  if(el) el.innerHTML = renderPaxSearchResultsHTML();
+}
+function renderPaxSearchResultsHTML(){
+  const q = paxSearchQuery.trim().toUpperCase();
+  if(!q) return `<small class="hint">Start typing to search PNRs on this flight.</small>`;
+  const flightId = STATE.selection.flightId;
+  const matches = [];
+  STATE.bookings.filter(b=>b.legs.includes(flightId)).forEach(b=>{
+    b.passengers.forEach(p=>{
+      if(p.surname && p.surname.toUpperCase().includes(q)){
+        matches.push({ b, p });
+      }
+    });
+  });
+  if(matches.length===0) return `<small class="hint">No passenger surname matches "${paxSearchQuery}" on this flight.</small>`;
+  const rows = matches.map(({b,p})=>{
+    const ls = p.legs[flightId] || {};
+    return `
+    <tr>
+      <td>${p.surname}/${p.given}</td>
+      <td>${p.title}</td>
+      <td>${b.pnr}</td>
+      <td><span class="badge ${p.cls}">${classCodeLetter(p.cls)}</span></td>
+      <td><span class="badge ${ls.checkedIn?'ok':'pending'}">${ls.checkedIn?'CHECKED-IN':'NOT CHECKED-IN'}</span></td>
+      <td><button class="btn small secondary" onclick="goToPassenger('${flightId}','${b.pnr}','${p.key}')">Select →</button></td>
+    </tr>`;
+  }).join('');
+  return `
+    <table>
+      <thead><tr><th>Passenger</th><th>Title</th><th>PNR</th><th>Cl</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+function goToPassenger(flightId,pnr,key){
+  STATE.selection.flightId = flightId;
+  STATE.selection.pnr = pnr;
+  STATE.selection.passengerKey = null;
+  paxSearchQuery = '';
+  render();
+}
+
+function setPaxTitle(pnr,key,v){
+  const b=STATE.bookings.find(x=>x.pnr===pnr); const p=b.passengers.find(x=>x.key===key);
+  p.title = v; saveState(); render();
+}
+function setPaxClass(pnr,key,v){
+  const b=STATE.bookings.find(x=>x.pnr===pnr); const p=b.passengers.find(x=>x.key===key);
+  if(p.cls!==v){ p.cls = v; Object.keys(p.legs).forEach(fid=>{ p.legs[fid].seat=null; }); } // all leg seats cleared: seat ranges are class-specific
+  saveState(); render();
+}
+function setPaxPassport(pnr,key,field,v){
+  const b=STATE.bookings.find(x=>x.pnr===pnr); const p=b.passengers.find(x=>x.key===key);
+  p[field] = v; saveState(); render();
+}
+function setPaxGroup(pnr,key,v){
+  const b=STATE.bookings.find(x=>x.pnr===pnr); const p=b.passengers.find(x=>x.key===key);
+  p.group = v; saveState();
+}
+function addBagRow(pnr,key){
+  const b=STATE.bookings.find(x=>x.pnr===pnr); const p=b.passengers.find(x=>x.key===key);
+  if(p.bagTags && p.bagTags.length) return notify('Bags are already tagged through for this passenger.');
+  if(!p.bagWeights) p.bagWeights=[];
+  if(p.bagWeights.length>=9) return notify('Maximum 9 bags per passenger in this simulation.');
+  p.bagWeights.push(23);
+  saveState(); render();
+}
+function removeBagRow(pnr,key,idx){
+  const b=STATE.bookings.find(x=>x.pnr===pnr); const p=b.passengers.find(x=>x.key===key);
+  p.bagWeights.splice(idx,1);
+  saveState(); render();
+}
+function setBagWeight(pnr,key,idx,v){
+  const b=STATE.bookings.find(x=>x.pnr===pnr); const p=b.passengers.find(x=>x.key===key);
+  const w = Math.max(0, parseFloat(v)||0);
+  p.bagWeights[idx] = w;
+  saveState();
+}
+
+function startSeatSelectForLeg(pnr,key,flightId){
+  STATE.selection.pnr = pnr; STATE.selection.passengerKey = key; STATE.selection.seatLegId = flightId; render();
+}
+
+function drawSeatmapIfNeeded(){
+  if(!STATE.selection.passengerKey) return;
+  const flight = STATE.flights.find(f=>f.id===STATE.selection.seatLegId) || STATE.flights.find(f=>f.id===STATE.selection.flightId);
+  const booking = STATE.bookings.find(b=>b.pnr===STATE.selection.pnr);
+  const pax = booking.passengers.find(p=>p.key===STATE.selection.passengerKey);
+  if(!flight || !booking.legs.includes(flight.id)){
+    document.getElementById('seatmap-container').innerHTML = '<div class="empty">This passenger is not booked on that flight leg.</div>'; return;
+  }
+  const ac = getAircraftByReg(flight.tailNumber);
+  if(!ac){ document.getElementById('seatmap-container').innerHTML = '<div class="empty">This flight has no registered aircraft/cabin layout.</div>'; return; }
+  const seats = buildSeatList(flight.tailNumber);
+  const takenIds = new Set();
+  STATE.bookings.filter(b=>b.legs.includes(flight.id)).forEach(b=>b.passengers.forEach(p=>{ const s=p.legs[flight.id]?.seat; if(s) takenIds.add(s); }));
+  const curSeat = pax.legs[flight.id]?.seat;
+
+  const rowsMap = {};
+  seats.forEach(s=>{ (rowsMap[s.row]=rowsMap[s.row]||[]).push(s); });
+
+  let html = '<div class="seatmap">';
+  Object.keys(rowsMap).map(Number).sort((a,b)=>a-b).forEach(rowNum=>{
+    const rowSeats = rowsMap[rowNum];
+    const cls = rowSeats[0].cls;
+    const groupDefs = ac.classes[cls].groups;
+    html += `<div class="seatrow"><div class="rownum">${rowNum}</div>`;
+    groupDefs.forEach(g=>{
+      html += '<div class="seatgroup">';
+      g.forEach(letter=>{
+        const id = rowNum+letter;
+        const isTaken = takenIds.has(id) && curSeat!==id;
+        const isSelected = curSeat===id;
+        html += `<div class="seat ${cls} ${isTaken?'taken':''} ${isSelected?'selected':''}" ${isTaken?'':`onclick="pickSeat('${id}','${cls}')"`}>${letter}</div>`;
+      });
+      html += '</div>';
+    });
+    html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
+  });
+  html += '</div>';
+  document.getElementById('seatmap-container').innerHTML = html;
+}
+
+function pickSeat(seatId,cls){
+  const booking = STATE.bookings.find(b=>b.pnr===STATE.selection.pnr);
+  const pax = booking.passengers.find(p=>p.key===STATE.selection.passengerKey);
+  const flightId = STATE.selection.seatLegId || STATE.selection.flightId;
+  if(!pax.legs[flightId]) pax.legs[flightId] = { seat:null, checkedIn:false, seq:null, boarded:false };
+  pax.legs[flightId].seat = seatId; pax.cls = cls;
+  saveState(); render();
+}
+
+function autoAssignSeat(flightId, cls, excludePassengerKey){
+  const flight = STATE.flights.find(f=>f.id===flightId);
+  if(!flight) return null;
+  const ac = getAircraftByReg(flight.tailNumber);
+  if(!ac || !ac.classes[cls]) return null;
+  const seats = buildSeatList(flight.tailNumber).filter(s=>s.cls===cls);
+  const takenIds = new Set();
+  STATE.bookings.filter(b=>b.legs.includes(flightId)).forEach(b=>b.passengers.forEach(p=>{
+    if(p.key===excludePassengerKey) return;
+    const s=p.legs[flightId]?.seat; if(s) takenIds.add(s);
+  }));
+  const free = seats.filter(s=>!takenIds.has(s.id));
+  if(free.length===0) return null;
+  return free[Math.floor(Math.random()*free.length)].id; // random pick among available seats in class
+}
+
+
+function checkInPassengerLeg(pnr,key,flightId){
+  const flight = STATE.flights.find(f=>f.id===flightId);
+  const booking = STATE.bookings.find(b=>b.pnr===pnr);
+  const pax = booking.passengers.find(p=>p.key===key);
+  if(!pax.legs[flightId]) pax.legs[flightId] = { seat:null, checkedIn:false, seq:null, boarded:false };
+  const legState = pax.legs[flightId];
+  if(!legState.seat){
+    const auto = autoAssignSeat(flightId, pax.cls, pax.key);
+    if(!auto) return notify('No seats available in this class on this leg — assign one manually or free up a seat.');
+    legState.seat = auto;
+  }
+  STATE.seqCounters[flightId] = (STATE.seqCounters[flightId]||0)+1;
+  legState.seq = String(STATE.seqCounters[flightId]).padStart(3,'0');
+  legState.checkedIn = true;
+  ensureThroughBagTags(booking, pax);
+  saveState(); render();
+}
+
+function checkInAllLegsThrough(pnr,key){
+  const booking = STATE.bookings.find(b=>b.pnr===pnr);
+  const pax = booking.passengers.find(p=>p.key===key);
+  booking.legs.forEach(flightId=>{
+    const legState = pax.legs[flightId];
+    if(!legState || legState.checkedIn) return;
+    if(!legState.seat){
+      const auto = autoAssignSeat(flightId, pax.cls, pax.key);
+      if(!auto){ return; } // no seats available on this leg — leave unchecked, agent can resolve manually
+      legState.seat = auto;
+    }
+    STATE.seqCounters[flightId] = (STATE.seqCounters[flightId]||0)+1;
+    legState.seq = String(STATE.seqCounters[flightId]).padStart(3,'0');
+    legState.checkedIn = true;
+  });
+  ensureThroughBagTags(booking, pax);
+  saveState(); render();
+}
+
+function ensureThroughBagTags(booking, pax){
+  if(pax.bagTags && pax.bagTags.length) return; // already tagged
+  const weights = pax.bagWeights || [];
+  if(weights.length===0) return;
+  const lastLegId = booking.legs[booking.legs.length-1];
+  pax.bags = weights.length;
+  pax.bagTags = [];
+  weights.forEach(w=>{
+    STATE.bagCounters[lastLegId] = (STATE.bagCounters[lastLegId]||0)+1;
+    const serial = String(STATE.bagCounters[lastLegId]).padStart(6,'0');
+    pax.bagTags.push({ lp:`0${AIRLINE.btic}${serial}`, weight:w }); // 10-digit license plate: 0 + BTIC(3) + serial(6)
+  });
+}
+
+/* =====================================================================
+   TAB: BOARDING PASS
+===================================================================== */
+function checkedInLegsList(){
+  const list = [];
+  STATE.bookings.forEach(b=>{
+    b.legs.forEach(flightId=>{
+      const f = STATE.flights.find(fl=>fl.id===flightId);
+      if(!f) return;
+      b.passengers.forEach(p=>{
+        const legState = p.legs[flightId];
+        if(legState && legState.checkedIn){
+          list.push({ uid: p.key+'@'+flightId, pax:p, flight:f, pnr:b.pnr, legState });
+        }
+      });
+    });
+  });
+  return list;
+}
+function flattenPaxForLeg(pax, legState, pnr){
+  return { ...pax, pnr, seat: legState.seat, seq: legState.seq, boarded: legState.boarded, checkedIn: legState.checkedIn };
+}
+
+function renderPassTab(){
+  const list = checkedInLegsList();
+  if(list.length===0) return `<div class="panel"><div class="panel-body empty">No checked-in passengers yet. Check in a passenger in the Check-In tab.</div></div>`;
+  const sel = STATE.selection.passForPass && list.find(x=>x.uid===STATE.selection.passForPass) ? STATE.selection.passForPass : list[0].uid;
+  STATE.selection.passForPass = sel;
+  const item = list.find(x=>x.uid===sel) || list[0];
+  const p = flattenPaxForLeg(item.pax, item.legState, item.pnr);
+  const f = item.flight;
+
+  return `
+  <div class="panel">
+    <div class="panel-title">Boarding Pass Preview</div>
+    <div class="panel-body">
+    <div class="row">
+      <div class="field"><label>Passenger / Leg</label>
+        <select onchange="STATE.selection.passForPass=this.value;render()">
+          ${list.map(x=>`<option value="${x.uid}" ${x.uid===sel?'selected':''}>${x.pax.surname}/${x.pax.given} · ${x.flight.flightNo} · ${x.legState.seat}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn secondary" onclick="printEl('bpass-print')">Print (Pass Only)</button>
+    </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-body" style="overflow-x:auto;">
+    <div id="bpass-print" class="print-target">
+      ${boardingPassHTML(p,f)}
+    </div>
+    <small class="hint">Layout replicates a Turkish Airlines ATB stock boarding pass (main coupon + agent stub), size 230mm × 90mm. The tall barcode on the left is a genuine, standards-compliant PDF417 symbol (generated with bwip-js) carrying the same BCBP-style data — it is a real decodable barcode, not a visual placeholder, and the Boarding Gate tab reads it back with an actual PDF417 decoder (ZXing), not a QR-code workaround.</small>
+    </div>
+  </div>
+  `;
+}
+
+
+function boardingPassHTML(p,f){
+  const bcbp = `M1${p.surname}/${p.given[0]}          ${p.pnr} ${f.from}${f.to}${AIRLINE.iata} 0${f.flightNo.replace(/\D/g,'')} ${classCodeLetter(p.cls)}${p.seat}${p.seq}`;
+  const fnum = f.flightNo.replace(/\D/g,'');
+  const cc = classCodeLetter(p.cls);
+  const group = p.group && p.group!=='-' ? p.group : '—';
+  const bagCount = p.bags||0;
+  const ticketLine = `${p.seq} ${fnum} ${cc}${p.seat} ${bagCount}/${bagCount}`;
+  const apis = apisStatus(p, f);
+  const apisLabel = apis.ok ? 'APIS OK' : 'APIS FAIL';
+
+  return `
+  <div class="pass">
+    <div class="coupon main">
+      <div class="redhead">
+        <div class="brand">TURKISH<br>AIRLINES</div>
+        <div class="divider"></div>
+        <div class="bp-label">BOARDING PASS | BİNİŞ KARTI</div>
+        <div class="spacer"></div>
+        <div class="star">A STAR ALLIANCE MEMBER ★</div>
+      </div>
+      <div class="body">
+        <div class="barcode-col"><canvas id="pdf417-${p.key}-${f.id}" data-bcbp="${encodeURIComponent(bcbp)}"></canvas></div>
+        <div class="content">
+          <div class="stampband">${classLabel(p.cls)}</div>
+          <div class="toprow">
+            <span>${p.surname} ${p.given}</span>
+            <span class="fqtv">FQTV<br>${apisLabel}</span>
+          </div>
+          <div class="flightline">
+            <span>${AIRLINE.iata} ${fnum}</span><span>${cc}</span><span>${fmtDate(f.date)}</span>
+            <span>${f.std}</span><span>${f.from}</span><span>${f.to}</span>
+            <span class="apis">TSA PRECHK</span>
+          </div>
+          <div class="bigfields">
+            <div class="bf"><b>GATE/KAPI</b><span>${f.gate}</span></div>
+            <div class="bf"><b>BOARDING TIME<br>BİNİŞ SAATİ</b><span>${f.boarding}</span></div>
+            <div class="bf"><b>SEAT/KOLTUK</b><span>${p.seat}</span></div>
+          </div>
+          <div class="destcity">${f.toCity}</div>
+          <div class="ticketline">${ticketLine} &nbsp; GROUP: ${group}</div>
+          <div class="secline">SEC NO:${p.seq} &nbsp; BAG:${bagCount}/${bagCount} &nbsp; AGT:RZ/P</div>
+          <div class="microtext">BOARDING ENDS 20MIN BEFORE DEPARTURE/UÇAĞA KABUL KALKIŞ SAATİNE 20DK KALA BİTER<br>PLEASE WATCH SCREENS FOR GATE NUMBER AND BOARDING TIME.</div>
+        </div>
+      </div>
+    </div>
+    <div class="coupon stub">
+      <div class="redhead">
+        <div class="brand" style="font-size:9.5px">TURKISH<br>AIRLINES</div>
+        <div class="divider"></div>
+        <div class="bp-label" style="font-size:8px">BOARDING PASS<br>BİNİŞ KARTI</div>
+      </div>
+      <div class="body">
+        <div class="content" style="padding:3mm 4mm">
+          <div class="stampband" style="font-size:20px;right:3mm">${classLabel(p.cls)}</div>
+          <div class="stub-namebox">${p.surname} ${p.given}</div>
+          <div class="stubtable">
+            <div><label>NAME / İSİM</label>${p.surname} ${p.given}</div>
+            <div><label>&nbsp;</label></div>
+            <div><label>FROM / NEREDEN</label>${f.fromCity}</div>
+            <div><label>TO / NEREYE</label>${f.toCity}</div>
+          </div>
+          <div class="stub-headrow"><span>FLIGHT<br>UÇUŞ</span><span>CLASS<br>SINIF</span><span>DATE<br>TARİH</span><span>TIME<br>SAAT</span></div>
+          <div class="stub-valrow"><span>${AIRLINE.iata} ${fnum}</span><span>${cc}</span><span>${fmtDate(f.date)}</span><span>${f.std}</span></div>
+          <div class="stub-boxes">
+            <div class="bf"><b>GROUP</b><span>${group}</span></div>
+            <div class="bf"><b>SEAT/KOLTUK</b><span>${p.seat}</span></div>
+          </div>
+          <div class="stub-footline">${bagCount}/${bagCount} &nbsp; ${p.seq} &nbsp; RZ/P<br>${ticketLine}</div>
+          <div class="stub-star">A STAR ALLIANCE<br>MEMBER ★</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* Renders a REAL, standards-compliant PDF417 barcode (via bwip-js) at natural
+   orientation onto an offscreen canvas, then composites it rotated 90° onto the
+   visible canvas so it reads top-to-bottom like the printed TK stock — same data
+   the Boarding Gate camera (ZXing BrowserPDF417Reader) decodes back. */
+function renderVerticalPDF417(canvasEl, text){
+  const off = document.createElement('canvas');
+  bwipjs.toCanvas(off, {
+    bcid:'pdf417', text:text, scale:3, columns:8, rowheight:3,
+    includetext:false, backgroundcolor:'FFFFFF', paddingwidth:4, paddingheight:4
+  });
+  const outW = 210, outH = 640;
+  canvasEl.width = outW; canvasEl.height = outH;
+  const ctx = canvasEl.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,outW,outH);
+  ctx.save();
+  ctx.translate(outW/2, outH/2);
+  ctx.rotate(-Math.PI/2);
+  const scale = Math.min(outW/off.height, outH/off.width) * 0.94;
+  ctx.scale(scale, scale);
+  ctx.drawImage(off, -off.width/2, -off.height/2);
+  ctx.restore();
+}
+
+function drawBoardingPassBarcode(){
+  document.querySelectorAll('canvas[id^="pdf417-"]').forEach(el=>{
+    const text = decodeURIComponent(el.dataset.bcbp);
+    try{ renderVerticalPDF417(el, text); }
+    catch(e){ console.error('PDF417 render failed', e); }
+  });
+}
+
+/* =====================================================================
+   TAB: BAG TAG
+===================================================================== */
+function paxWithBagsList(){
+  const list = [];
+  STATE.bookings.forEach(b=>{
+    b.passengers.forEach(p=>{
+      if(p.bagTags && p.bagTags.length>0){
+        const legs = b.legs.map(id=>STATE.flights.find(f=>f.id===id)).filter(Boolean);
+        list.push({ pax:p, booking:b, legs });
+      }
+    });
+  });
+  return list;
+}
+
+function renderBagTagTab(){
+  const list = paxWithBagsList();
+  if(list.length===0) return `<div class="panel"><div class="panel-body empty">No checked bags. Enter a bag count during Check-In before confirming.</div></div>`;
+  const sel = STATE.selection.passForTag && list.find(x=>x.pax.key===STATE.selection.passForTag) ? STATE.selection.passForTag : list[0].pax.key;
+  STATE.selection.passForTag = sel;
+  const item = list.find(x=>x.pax.key===sel) || list[0];
+  const p = { ...item.pax, pnr:item.booking.pnr };
+  const legs = item.legs;
+
+  const tagsHtml = p.bagTags.map((bt,i)=>`
+    <div class="bagtag-wrap">
+      <div id="bagtag-print-${i}" class="print-target">${bagTagHTML(p,legs,bt.lp,bt.weight,i+1)}</div>
+    </div>`).join('');
+
+  return `
+  <div class="panel">
+    <div class="panel-title">Bag Tag Preview</div>
+    <div class="panel-body">
+    <div class="row">
+      <div class="field"><label>Passenger</label>
+        <select onchange="STATE.selection.passForTag=this.value;render()">
+          ${list.map(x=>`<option value="${x.pax.key}" ${x.pax.key===sel?'selected':''}>${x.pax.surname}/${x.pax.given} · ${x.pax.bagTags.length} bag(s) · ${legChainLabel(x.booking)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-body">
+    ${p.bagTags.map((bt,i)=>`<div style="margin-bottom:14px">
+        <button class="btn secondary small" onclick="printEl('bagtag-print-${i}')">Print Bag #${i+1} (${bt.weight}kg)</button>
+      </div>`).join('')}
+    ${tagsHtml}
+    <small class="hint">License Plate number (10 digits): 0 (interline/online) + ${AIRLINE.btic} (TK numeric carrier code) + 6-digit serial — per IATA Resolution 751/740. Bags are tagged once, through to the final destination of the itinerary; connecting airports appear on the two VIA lines. Layout is now a single continuous vertical strip (top → bottom): main barcode block, routing/VIA data, two tear-off claim stubs, and the LIMITED RELEASE mini-tag — every barcode shown is a genuine, scannable Code128 symbol (bwip-js) encoding the real license plate.</small>
+    </div>
+  </div>
+  `;
+}
+
+function viaBoxHTML(stopIndex, legs){
+  if(stopIndex >= legs.length-1){
+    return `<div class="viabox empty">VIA: —</div>`;
+  }
+  const arrLeg = legs[stopIndex];
+  const nextLeg = legs[stopIndex+1];
+  return `<div class="viabox">
+    <div class="toplab"><span>VIA:</span><span>${nextLeg.flightNo}</span></div>
+    <div class="city">${arrLeg.toCity}</div>
+    <div class="bottomrow"><span class="code">${arrLeg.to}</span><span>${fmtDate(nextLeg.date)}</span></div>
+  </div>`;
+}
+
+function bagTagHTML(p,legs,licensePlate,weight,idx){
+  const originFlight = legs[0];
+  const destFlight = legs[legs.length-1];
+  const routingFlightNos = legs.map(x=>x.flightNo.replace(/\D/g,'')).join('/');
+  const bagIdx = idx.toString().padStart(2,'0');
+  const bagTotal = p.bagTags.length.toString().padStart(3,'0');
+  const last6 = licensePlate.slice(-6);
+  const seqBox = licensePlate.slice(4,7); // small reference box, like the "506" seen on the real tag
+  const viaBox1 = viaBoxHTML(0, legs);
+  const viaBox2 = viaBoxHTML(1, legs);
+
+  return `
+  <div class="bagtag" data-lp="${licensePlate}">
+    <div class="barblock"><canvas id="bar-main-${p.key}-${idx}" data-code="${licensePlate}"></canvas></div>
+    <div class="barblock"><canvas id="bar-main2-${p.key}-${idx}" data-code="${licensePlate}"></canvas></div>
+
+    <div class="databox">
+      <div class="row"><span class="seqbox">${bagIdx}${bagTotal.slice(0,1)}</span><span>${classCodeLetter(p.cls)}P &nbsp; ${last6}</span></div>
+      <div class="row"><span class="seqbox">${seqBox}</span></div>
+      <div class="row">NME:${p.surname}/${p.given.slice(0,3)}</div>
+      <div class="row">PNR:${p.pnr} &nbsp; ${bagIdx}/${bagTotal}</div>
+
+      <div class="destrow">
+        <div class="toplab">TO:</div>
+        <div class="city">${destFlight.toCity}</div>
+        <div class="bottomrow"><span class="code">${destFlight.to}</span><span>${fmtDate(originFlight.date)}</span></div>
+        <div class="bottomrow"><span>${AIRLINE.iata} &nbsp; ${routingFlightNos}</span><span>WT ${weight}KG</span></div>
+      </div>
+      ${viaBox1}
+      ${viaBox2}
+    </div>
+
+    <div class="stub">
+      <div class="line1">${fmtDate(originFlight.date)} &nbsp; ${AIRLINE.iata} ${routingFlightNos} ${destFlight.to} &nbsp; ${bagIdx} ${classCodeLetter(p.cls)}P ${last6}</div>
+      <canvas class="bars" id="bar-stub1-${p.key}-${idx}" data-code="${licensePlate}"></canvas>
+    </div>
+    <div class="stub">
+      <div class="line1">${fmtDate(originFlight.date)} &nbsp; ${AIRLINE.iata} ${routingFlightNos} ${destFlight.to} &nbsp; ${bagIdx} ${classCodeLetter(p.cls)}P ${last6}</div>
+      <canvas class="bars" id="bar-stub2-${p.key}-${idx}" data-code="${licensePlate}"></canvas>
+    </div>
+
+    <div class="loopline"></div>
+    <div class="minitag">
+      <div class="toprow"><span>LIMITED RELEASE</span><span class="box"></span></div>
+      <div style="margin-top:1mm">PNR:${p.pnr} &nbsp; ${last6}</div>
+      <div>NME:${p.surname}/${p.given.slice(0,3)}</div>
+      <div>${fmtDate(originFlight.date)} &nbsp; ${bagIdx}/${bagTotal} ${originFlight.from} &nbsp; ${classCodeLetter(p.cls)}P /EO</div>
+      <div class="destbox">
+        <div class="toplab" style="font-family:Arial,sans-serif;font-size:7px;font-weight:700;color:#333">TO:</div>
+        <div class="city">${destFlight.toCity}</div>
+        <div class="sub"><span>${AIRLINE.iata} ${routingFlightNos}</span><span>${destFlight.to}</span></div>
+      </div>
+      ${viaBox1}
+      ${viaBox2}
+      <div style="display:flex;justify-content:space-between;margin-top:1mm">${seqBox} &nbsp; ${classCodeLetter(p.cls)}P &nbsp; ${licensePlate}</div>
+      <canvas class="bars" id="bar-mini-${p.key}-${idx}" data-code="${licensePlate}"></canvas>
+    </div>
+
+  </div>`;
+}
+
+function fmtDate(iso){
+  const d=new Date(iso+"T00:00:00");
+  const months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  return String(d.getDate()).padStart(2,'0')+months[d.getMonth()];
+}
+
+/* Draws real Code128 barcodes (via bwip-js) for every canvas on the bag tag —
+   same license-plate data repeated at different sizes, exactly like a real
+   printed tag repeats its barcode for scan redundancy along the strip. */
+function drawBagTagBarcodes(){
+  document.querySelectorAll('.bagtag canvas[data-code]').forEach(el=>{
+    const code = el.dataset.code;
+    try{
+      bwipjs.toCanvas(el, {
+        bcid:'code128', text:code, scale:2,
+        height: el.id.startsWith('bar-main')?11:el.id.startsWith('bar-mini')?7:8,
+        includetext:false, backgroundcolor:'FFFFFF', paddingwidth:2, paddingheight:1
+      });
+    }catch(e){ console.error('Code128 render failed', e); }
+  });
+}
+
+/* =====================================================================
+   TAB: BOARDING GATE / BOARDING CONTROL
+   (progress bar + live seatmap + camera scan + manual boarding —
+   modeled on real DCS boarding-control screens: flight progress,
+   yet-to-board tracking, and a visual seatmap of who's on board)
+===================================================================== */
+let zxingControls=null;
+
+function renderGate(){
+  const flight = STATE.flights.find(f=>f.id===STATE.selection.flightId);
+  const allCheckedInList = [];
+  let totalCheckedIn = 0, totalBoarded = 0;
+  if(flight){
+    STATE.bookings.filter(b=>b.legs.includes(flight.id)).forEach(b=>{
+      b.passengers.forEach(p=>{
+        const ls = p.legs[flight.id];
+        if(ls && ls.checkedIn){
+          totalCheckedIn++;
+          if(ls.boarded) totalBoarded++;
+          allCheckedInList.push({ pnr:b.pnr, pax:p, legState:ls });
+        }
+      });
+    });
+  }
+  allCheckedInList.sort((a,b)=> (a.legState.seq||'999').localeCompare(b.legState.seq||'999'));
+  const notBoardedCount = totalCheckedIn - totalBoarded;
+  const pct = totalCheckedIn>0 ? Math.round(totalBoarded/totalCheckedIn*100) : 0;
+
+  const paxRows = allCheckedInList.map(x=>`
+    <tr>
+      <td>${x.legState.seq}</td>
+      <td>${x.pax.title} ${x.pax.surname}/${x.pax.given}</td>
+      <td>${x.legState.seat}</td>
+      <td><span class="badge ${x.pax.cls}">${classCodeLetter(x.pax.cls)}</span></td>
+      <td>${x.pnr}</td>
+      <td><span class="badge ${x.legState.boarded?'boarded':'pending'}">${x.legState.boarded?'BOARDED':'NOT BOARDED'}</span></td>
+      <td>${x.legState.boarded
+        ? `<button class="btn small secondary" onclick="toggleSeatBoarded('${x.pnr}','${x.pax.key}','${flight.id}')">Unboard</button>`
+        : `<button class="btn small" onclick="toggleSeatBoarded('${x.pnr}','${x.pax.key}','${flight.id}')">Board</button>`}</td>
+    </tr>`).join('');
+
+  return `
+  <div class="panel">
+    <div class="panel-title">Boarding Control ${flight?'— '+flight.flightNo+' '+flight.from+'-'+flight.to:''}</div>
+    <div class="panel-body">
+    ${!flight ? '<div class="empty">No active flight selected.</div>' : `
+    <div class="boardsummary">
+      <div class="bs-item"><label>Gate</label><span>${flight.gate}</span></div>
+      <div class="bs-item"><label>Boarding</label><span>${flight.boarding}</span></div>
+      <div class="bs-item"><label>STD</label><span>${flight.std}</span></div>
+      <div class="bs-item"><label>Checked-In</label><span>${totalCheckedIn}</span></div>
+      <div class="bs-item"><label>Boarded</label><span>${totalBoarded}</span></div>
+      <div class="bs-item"><label>Remaining</label><span>${notBoardedCount}</span></div>
+      <div class="bs-progress">
+        <div class="boardbar"><div class="fill" style="width:${pct}%"></div></div>
+        <div class="pct">${pct}% boarded ${totalBoarded===totalCheckedIn && totalCheckedIn>0 ? '— READY FOR DEPARTURE' : ''}</div>
+      </div>
+    </div>
+    `}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Camera Scan</div>
+    <div class="panel-body">
+    <div class="row">
+      <button class="btn" id="camToggleBtn" onclick="toggleCamera()">Enable Camera</button>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:20px;flex-wrap:wrap;">
+      <div class="cam-wrap">
+        <video id="camVideo" autoplay playsinline muted></video>
+        <div class="cam-frame"></div>
+      </div>
+      <div style="flex:1;min-width:260px">
+        <div id="scanResult"></div>
+        <small class="hint">Point the printed or on-screen PDF417 barcode (the tall code on the left of the Boarding Pass) at the camera. Decoding uses ZXing's real PDF417 reader. The system verifies the flight, sequence number, and whether the passenger has already boarded.</small>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Manual Boarding — Passenger List</div>
+    <div class="panel-body">
+    ${!flight ? '<div class="empty">No active flight selected.</div>' : allCheckedInList.length===0 ? '<div class="empty">No checked-in passengers on this flight yet.</div>' : `
+    <table>
+      <thead><tr><th>Seq</th><th>Passenger</th><th>Seat</th><th>Cl</th><th>PNR</th><th>Status</th><th></th></tr></thead>
+      <tbody>${paxRows}</tbody>
+    </table>
+    <small class="hint">Board/Unboard works the same as scanning — toggling here updates the same status shown on the Live Seatmap below.</small>
+    `}
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Live Seatmap — Boarding Status</div>
+    <div class="panel-body">
+    ${!flight ? '<div class="empty">No active flight selected.</div>' : renderGateSeatmapHTML(flight)}
+    <div class="gate-legend">
+      <span><span class="sw" style="background:#1a7f37"></span>Boarded</span>
+      <span><span class="sw" style="background:#7a5a12"></span>Checked-in, not boarded</span>
+      <span><span class="sw" style="background:#0e2a4a;border:1px solid #22344a"></span>Not checked-in / empty</span>
+      <span style="color:#5a6b7d">Click a seat to toggle boarded status</span>
+    </div>
+    </div>
+  </div>
+  `;
+}
+
+function renderGateSeatmapHTML(flight){
+  const ac = getAircraftByReg(flight.tailNumber);
+  if(!ac) return '<div class="empty">This flight has no registered aircraft/cabin layout.</div>';
+  const seats = buildSeatList(flight.tailNumber);
+  const bySeat = {}; // seatId -> {pnr, pax, legState}
+  STATE.bookings.filter(b=>b.legs.includes(flight.id)).forEach(b=>{
+    b.passengers.forEach(p=>{
+      const ls = p.legs[flight.id];
+      if(ls && ls.seat) bySeat[ls.seat] = { pnr:b.pnr, pax:p, legState:ls };
+    });
+  });
+  const rowsMap = {};
+  seats.forEach(s=>{ (rowsMap[s.row]=rowsMap[s.row]||[]).push(s); });
+
+  let html = '<div class="gate-seatmap">';
+  Object.keys(rowsMap).map(Number).sort((a,b)=>a-b).forEach(rowNum=>{
+    const rowSeats = rowsMap[rowNum];
+    const cls = rowSeats[0].cls;
+    const groupDefs = ac.classes[cls].groups;
+    html += `<div class="seatrow"><div class="rownum">${rowNum}</div>`;
+    groupDefs.forEach(g=>{
+      html += '<div class="seatgroup">';
+      g.forEach(letter=>{
+        const id = rowNum+letter;
+        const occ = bySeat[id];
+        let statusClass = 'notcheckedin';
+        let title = 'Empty / not checked-in';
+        let onclick = '';
+        if(occ){
+          if(occ.legState.checkedIn){
+            statusClass = occ.legState.boarded ? 'boarded' : 'checkedin';
+            title = `${occ.pax.surname}/${occ.pax.given} · PNR ${occ.pnr} · ${occ.legState.boarded?'BOARDED':'not boarded'}`;
+            onclick = `onclick="toggleSeatBoarded('${occ.pnr}','${occ.pax.key}','${flight.id}')"`;
+          }
+        }
+        html += `<div class="gate-seat ${statusClass}" title="${title}" ${onclick}>${letter}</div>`;
+      });
+      html += '</div>';
+    });
+    html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function toggleSeatBoarded(pnr,key,flightId){
+  const booking = STATE.bookings.find(b=>b.pnr===pnr);
+  const pax = booking && booking.passengers.find(p=>p.key===key);
+  if(!pax) return;
+  const ls = pax.legs[flightId];
+  if(!ls || !ls.checkedIn) return;
+  ls.boarded = !ls.boarded;
+  saveState(); render();
+}
+
+
+
+function toggleCamera(){
+  if(zxingControls){ stopCamera(); } else { startCamera(); }
+}
+async function startCamera(){
+  try{
+    const codeReader = new ZXingBrowser.BrowserPDF417Reader();
+    const videoElem = document.getElementById('camVideo');
+    zxingControls = await codeReader.decodeFromConstraints(
+      { video:{ facingMode:'environment' } },
+      videoElem,
+      (result, err, controls) => {
+        if(result){ handleScan(result.getText()); }
+      }
+    );
+    document.getElementById('camToggleBtn').textContent='Disable Camera';
+  }catch(e){
+    document.getElementById('scanResult').innerHTML = `<div class="scan-result err">Could not access camera: ${e.message}. Check browser permissions.</div>`;
+  }
+}
+function stopCamera(){
+  if(zxingControls){ zxingControls.stop(); zxingControls=null; }
+  const btn=document.getElementById('camToggleBtn'); if(btn) btn.textContent='Enable Camera';
+}
+
+let lastScanTime=0;
+function handleScan(data){
+  const now = Date.now();
+  if(now-lastScanTime < 1500) return;
+  lastScanTime = now;
+  const resEl = document.getElementById('scanResult');
+  const m = data.match(/^M1([A-Z\-']+)\/(\w)\s+([A-Z0-9]{5,7})\s([A-Z]{3})([A-Z]{3})(TK)\s(\d+)\s([A-Z])(\d+[A-Z])(\d+)/);
+  if(!m){ resEl.innerHTML = `<div class="scan-result err">✕ Code not recognized (not a valid boarding pass for this system).</div>`; return; }
+  const [,surname,,pnr,from,to,,fnum,clsLetter,seat,seq] = m;
+  const flight = STATE.flights.find(f=>f.id===STATE.selection.flightId);
+  if(!flight || flight.from!==from || flight.to!==to || flight.flightNo.replace(/\D/g,'')!==fnum){
+    resEl.innerHTML = `<div class="scan-result err">✕ This boarding pass is for a different flight (${from}-${to} TK${fnum}), but the gate is set to ${flight?flight.flightNo:'-'}.</div>`; return;
+  }
+  const booking = STATE.bookings.find(b=>b.pnr===pnr && b.legs.includes(flight.id));
+  const pax = booking && booking.passengers.find(p=>p.legs[flight.id]?.seq===seq);
+  if(!pax){ resEl.innerHTML = `<div class="scan-result err">✕ Passenger not found in the manifest.</div>`; return; }
+  const legState = pax.legs[flight.id];
+  if(legState.boarded){ resEl.innerHTML = `<div class="scan-result err">✕ DUPLICATE — ${pax.surname}/${pax.given} already boarded (seat ${legState.seat}).</div>`; return; }
+  legState.boarded = true; saveState();
+  resEl.innerHTML = `<div class="scan-result ok">✓ BOARDED — ${pax.surname}/${pax.given} · seat ${legState.seat} · ${classLabel(pax.cls)}</div>`;
+}
+function initCameraIfNeeded(){ /* camera starts manually via button */ }
+
+/* =====================================================================
+   TAB: PAX MANIFEST
+===================================================================== */
+function renderManifest(){
+  const flight = STATE.flights.find(f=>f.id===STATE.selection.flightId) || STATE.flights[0];
+  if(!flight) return `<div class="panel"><div class="panel-body empty">No flights available.</div></div>`;
+  const passengers = [];
+  STATE.bookings.filter(b=>b.legs.includes(flight.id)).forEach(b=>{
+    b.passengers.forEach(p=>{
+      const ls = p.legs[flight.id] || {};
+      passengers.push({ ...p, pnr:b.pnr, seat:ls.seat, seq:ls.seq, checkedIn:ls.checkedIn, boarded:ls.boarded, transfer: b.legs.length>1 });
+    });
+  });
+  passengers.sort((a,b)=> (a.seq||'999').localeCompare(b.seq||'999'));
+
+  const rows = passengers.map(p=>{
+    const wt = (p.bagTags||[]).reduce((s,t)=>s+t.weight,0);
+    return `
+    <tr>
+      <td>${p.seq||'—'}</td>
+      <td>${p.title} ${p.surname}/${p.given}${p.transfer?' <span style="color:#5a6b7d">(TFR)</span>':''}</td>
+      <td>${p.pnr}</td>
+      <td><span class="badge ${p.cls}">${classCodeLetter(p.cls)}</span></td>
+      <td>${p.seat||'—'}</td>
+      <td>${p.bags}</td>
+      <td>${wt.toFixed(1)}kg</td>
+      <td><span class="badge ${p.checkedIn?'ok':'pending'}">${p.checkedIn?'CHECKED-IN':'NOT CHECKED-IN'}</span></td>
+      <td><span class="badge ${p.boarded?'boarded':'pending'}">${p.boarded?'BOARDED':'—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  const total = passengers.length;
+  const boarded = passengers.filter(p=>p.boarded).length;
+  const bags = passengers.reduce((s,p)=>s+p.bags,0);
+  const totalWeight = passengers.reduce((s,p)=>s+(p.bagTags||[]).reduce((x,t)=>x+t.weight,0),0);
+
+  return `
+  <div class="panel">
+    <div class="panel-title">Passenger Manifest</div>
+    <div class="panel-body">
+    <div class="manifest-head">
+      <div><b>${flight.flightNo}</b> · ${flight.from}-${flight.to} · ${flight.date}</div>
+      <button class="btn secondary" onclick="printEl('manifest-print')">Print Manifest</button>
+    </div>
+    <div id="manifest-print" class="print-target">
+      <div style="font-family:Arial;margin-bottom:8px;font-size:12px;">
+        <b>${AIRLINE.name}</b> — Flight ${flight.flightNo} — ${flight.fromCity} (${flight.from}) → ${flight.toCity} (${flight.to}) — ${flight.date} — STD ${flight.std} — Gate ${flight.gate}<br>
+        Total Pax: ${total} &nbsp;|&nbsp; Boarded: ${boarded} &nbsp;|&nbsp; Total Bags: ${bags} &nbsp;|&nbsp; Total Weight: ${totalWeight.toFixed(1)}kg
+      </div>
+      <table>
+        <thead><tr><th>SEQ</th><th>Passenger Name</th><th>PNR</th><th>CL</th><th>Seat</th><th>Bags</th><th>Weight</th><th>Check-in</th><th>Board</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="9" class="empty">No passengers</td></tr>'}</tbody>
+      </table>
+    </div>
+    </div>
+  </div>
+  `;
+}
+
+/* =====================================================================
+   PRINT HELPER
+===================================================================== */
+function printEl(id){
+  const el = document.getElementById(id);
+  const isPass = el.querySelector('.pass');
+  const isBagtag = el.querySelector('.bagtag');
+  const style = document.createElement('style');
+  style.id='dynamic-print-style';
+  if(isPass){ style.innerHTML = `@page{ size:230mm 90mm; margin:0; }`; }
+  else if(isBagtag){ style.innerHTML = `@page{ size:52mm 340mm; margin:0; }`; }
+  else { style.innerHTML = `@page{ size:A4; margin:14mm; }`; }
+  document.head.appendChild(style);
+  el.classList.add('print-target');
+  window.print();
+  setTimeout(()=>{ document.getElementById('dynamic-print-style')?.remove(); }, 500);
+}
+
+/* clock */
+function tickClock(){
+  document.getElementById('clockNow').textContent = new Date().toUTCString().slice(0,25)+' UTC';
+}
+setInterval(tickClock,1000); tickClock();
+
+loadState();
+</script>
+</body>
+</html>
