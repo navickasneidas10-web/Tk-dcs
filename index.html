@@ -1457,7 +1457,7 @@ function drawSeatmapIfNeeded(){
           html += `<div class="seat-blank" style="${gapStyle}"></div>`;
         }
       });
-      html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
+      html += `<span class="badge ${cls}" style="margin-left:8px;justify-self:start;width:fit-content;">${classLabel(cls)}</span></div>`;
     });
   });
   html += '</div>';
@@ -2012,7 +2012,7 @@ function renderGateSeatmapHTML(flight){
         }
         html += `<div class="gate-seat ${statusClass} ${rd.exitRow?'exitrow':''}" style="${gapStyle}" title="${title}" ${onclick}>${letter}</div>`;
       });
-      html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
+      html += `<span class="badge ${cls}" style="margin-left:8px;justify-self:start;width:fit-content;">${classLabel(cls)}</span></div>`;
     });
   });
   html += '</div>';
