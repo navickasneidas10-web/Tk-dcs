@@ -6,8 +6,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bwip-js/4.7.0/bwip-js-min.js"></script>
-<script src="https://unpkg.com/@zxing/library@latest"></script>
-<script src="https://unpkg.com/@zxing/browser@latest"></script>
+<script src="https://unpkg.com/@zxing/library@0.21.3"></script>
+<script src="https://unpkg.com/@zxing/browser@0.1.5"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -142,6 +142,7 @@ table tbody tr:hover{background:#eaf1fb;}
 .seat.premium{border-color:#c9b98a;}
 .seat.economy{border-color:#5a8ac9;}
 .seat.exitrow{box-shadow:0 0 0 2px #ffb020 inset;}
+.seat-blank{width:26px;height:26px;}
 .seatrow.exitrow{background:rgba(255,176,32,.08);border-radius:3px;}
 .exit-tag{background:#ffb020;color:#1a1200;font-size:8px;font-weight:800;padding:1px 4px;border-radius:2px;letter-spacing:.3px;}
 .gate-seat.exitrow{box-shadow:0 0 0 2px #ffb020 inset;}
@@ -392,6 +393,33 @@ function normalizeAcClass(clsDef){
 }
 function classRowDefs(ac, cls){
   return normalizeAcClass(ac.classes[cls]).slice().sort((a,b)=>a.row-b.row);
+}
+
+/* All seat letters used anywhere on this aircraft, in canonical left-to-right
+   order (I and O skipped, as is standard). Used so every row — even rows from
+   a different class with a different seat count/layout — lines its seat
+   letters up in the same fixed columns instead of drifting out of alignment. */
+function getMasterLetters(ac){
+  const set = new Set();
+  ['business','premium','economy'].forEach(cls=>{
+    classRowDefs(ac,cls).forEach(rd=> rd.groups.forEach(g=> g.forEach(l=>set.add(l))));
+  });
+  const order = 'ABCDEFGHJKLMNPQRSTUVWXYZ'.split('');
+  return order.filter(l=>set.has(l));
+}
+/* Which master-column letters should get a small visual gap before them
+   (an aisle), based on the widest/most representative cabin on this aircraft. */
+function getAisleBeforeSet(ac){
+  const preference = ['economy','premium','business'];
+  for(const cls of preference){
+    const rowDefs = classRowDefs(ac, cls);
+    if(rowDefs.length){
+      const s = new Set();
+      rowDefs[0].groups.forEach((g,i)=>{ if(i>0) s.add(g[0]); });
+      return s;
+    }
+  }
+  return new Set();
 }
 
 function buildSeatList(tailNumber){
@@ -1074,7 +1102,7 @@ function renderCheckin(){
   STATE.selection.flightId = flight.id;
 
   const bookingsForFlight = STATE.bookings.filter(b=>b.legs.includes(flight.id));
-  const pnrOptions = bookingsForFlight.map(b=>`<option value="${b.pnr}">${b.pnr} — ${legChainLabel(b)} (${b.passengers.length} PAX)</option>`).join('');
+  const pnrOptions = bookingsForFlight.map(b=>`<option value="${b.pnr}">${b.pnr} — ${legRouteLabel(b)} (${legChainLabel(b)}) · ${b.passengers.length} PAX</option>`).join('');
   const pnr = STATE.selection.pnr && bookingsForFlight.find(b=>b.pnr===STATE.selection.pnr) ? STATE.selection.pnr : (bookingsForFlight[0]?.pnr);
   STATE.selection.pnr = pnr;
   const booking = bookingsForFlight.find(b=>b.pnr===pnr);
@@ -1098,7 +1126,7 @@ function renderCheckin(){
         const ls = p.legs[fid] || {};
         const isCurrent = fid===flight.id;
         const isEditingSeat = fid===seatLegId && STATE.selection.passengerKey===p.key;
-        return `<span class="badge ${ls.boarded?'boarded':ls.checkedIn?'ok':'pending'}" style="${isCurrent?'outline:2px solid var(--accent);outline-offset:1px;':''}">${lf?lf.flightNo:'?'} ${ls.seat||'–'} ${ls.boarded?'BOARDED':ls.checkedIn?'CI':'—'}</span>
+        return `<span class="badge ${ls.boarded?'boarded':ls.checkedIn?'ok':'pending'}" style="${isCurrent?'outline:2px solid var(--accent);outline-offset:1px;':''}">${lf?lf.flightNo+' '+lf.from+'→'+lf.to:'?'} · ${ls.seat||'no seat'} · ${ls.boarded?'BOARDED':ls.checkedIn?'CHECKED-IN':'not checked-in'}</span>
           <button class="btn small secondary" style="${isEditingSeat?'outline:2px solid var(--accent);':''}" onclick="startSeatSelectForLeg('${booking.pnr}','${p.key}','${fid}')">Seat: ${lf?lf.flightNo:'?'}</button>`;
       }).join(' ');
       const allChecked = booking.legs.every(fid=> p.legs[fid]?.checkedIn);
@@ -1206,7 +1234,7 @@ function renderCheckin(){
   </div>
 
   <div class="panel">
-    <div class="panel-title">Passengers (PNR ${pnr||'—'}) ${booking && booking.legs.length>1 ? '— '+legChainLabel(booking)+' (transfer)' : ''}</div>
+    <div class="panel-title">Passengers (PNR ${pnr||'—'}) ${booking ? '— '+legRouteLabel(booking)+' ('+legChainLabel(booking)+')'+(booking.legs.length>1?' — TRANSFER':'') : ''}</div>
     <div class="panel-body">
     <div class="pax-list">${paxHtml || '<div class="empty">No passengers under a PNR for this flight yet. Create one in Flight Setup.</div>'}</div>
     ${booking ? `
@@ -1299,6 +1327,11 @@ function legChainLabel(booking){
   const legs = booking.legs.map(id=>STATE.flights.find(f=>f.id===id)).filter(Boolean);
   if(legs.length===0) return '—';
   return legs.map(f=>f.flightNo).join('→');
+}
+function legRouteLabel(booking){
+  const legs = booking.legs.map(id=>STATE.flights.find(f=>f.id===id)).filter(Boolean);
+  if(legs.length===0) return '—';
+  return legs.map(f=>f.from).concat([legs[legs.length-1].to]).join(' → ');
 }
 
 let paxSearchQuery = '';
@@ -1401,20 +1434,28 @@ function drawSeatmapIfNeeded(){
   STATE.bookings.filter(b=>b.legs.includes(flight.id)).forEach(b=>b.passengers.forEach(p=>{ const s=p.legs[flight.id]?.seat; if(s) takenIds.add(s); }));
   const curSeat = pax.legs[flight.id]?.seat;
 
+  const masterLetters = getMasterLetters(ac);
+  const aisleBefore = getAisleBeforeSet(ac);
+  const gridCols = `24px repeat(${masterLetters.length}, 26px) auto`;
+
   let html = '<div class="seatmap">';
   ['business','premium','economy'].forEach(cls=>{
     classRowDefs(ac, cls).forEach(rd=>{
       const rowNum = rd.row;
-      html += `<div class="seatrow ${rd.exitRow?'exitrow':''}"><div class="rownum">${rowNum}${rd.exitRow?' <span class="exit-tag" title="Emergency Exit Row">EXIT</span>':''}</div>`;
-      rd.groups.forEach(g=>{
-        html += '<div class="seatgroup">';
-        g.forEach(letter=>{
+      const rowLetters = new Set();
+      rd.groups.forEach(g=>g.forEach(l=>rowLetters.add(l)));
+      html += `<div class="seatrow ${rd.exitRow?'exitrow':''}" style="display:grid;grid-template-columns:${gridCols};align-items:center;gap:3px;">`;
+      html += `<div class="rownum">${rowNum}${rd.exitRow?' <span class="exit-tag" title="Emergency Exit Row">EXIT</span>':''}</div>`;
+      masterLetters.forEach(letter=>{
+        const gapStyle = aisleBefore.has(letter) ? 'margin-left:8px;' : '';
+        if(rowLetters.has(letter)){
           const id = rowNum+letter;
           const isTaken = takenIds.has(id) && curSeat!==id;
           const isSelected = curSeat===id;
-          html += `<div class="seat ${cls} ${rd.exitRow?'exitrow':''} ${isTaken?'taken':''} ${isSelected?'selected':''}" ${isTaken?'':`onclick="pickSeat('${id}','${cls}',${rd.exitRow?'true':'false'})"`}>${letter}</div>`;
-        });
-        html += '</div>';
+          html += `<div class="seat ${cls} ${rd.exitRow?'exitrow':''} ${isTaken?'taken':''} ${isSelected?'selected':''}" style="${gapStyle}" ${isTaken?'':`onclick="pickSeat('${id}','${cls}',${rd.exitRow?'true':'false'})"`}>${letter}</div>`;
+        }else{
+          html += `<div class="seat-blank" style="${gapStyle}"></div>`;
+        }
       });
       html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
     });
@@ -1939,31 +1980,39 @@ function renderGateSeatmapHTML(flight){
     });
   });
 
+  const masterLetters = getMasterLetters(ac);
+  const aisleBefore = getAisleBeforeSet(ac);
+  const gridCols = `24px repeat(${masterLetters.length}, 26px) auto`;
+
   let html = '<div class="gate-seatmap">';
   ['business','premium','economy'].forEach(cls=>{
     classRowDefs(ac, cls).forEach(rd=>{
       const rowNum = rd.row;
-      html += `<div class="seatrow ${rd.exitRow?'exitrow':''}"><div class="rownum">${rowNum}${rd.exitRow?' <span class="exit-tag" title="Emergency Exit Row">EXIT</span>':''}</div>`;
-      rd.groups.forEach(g=>{
-        html += '<div class="seatgroup">';
-        g.forEach(letter=>{
-          const id = rowNum+letter;
-          const occ = bySeat[id];
-          let statusClass = 'notcheckedin';
-          let title = 'Empty / not checked-in';
-          let onclick = '';
-          if(occ){
-            if(occ.legState.checkedIn){
-              statusClass = occ.legState.boarded ? 'boarded' : 'checkedin';
-              title = `${occ.pax.surname}/${occ.pax.given} · PNR ${occ.pnr} · ${occ.legState.boarded?'BOARDED':'not boarded'}`;
-              onclick = `onclick="toggleSeatBoarded('${occ.pnr}','${occ.pax.key}','${flight.id}')"`;
-            }
+      const rowLetters = new Set();
+      rd.groups.forEach(g=>g.forEach(l=>rowLetters.add(l)));
+      html += `<div class="seatrow ${rd.exitRow?'exitrow':''}" style="display:grid;grid-template-columns:${gridCols};align-items:center;gap:3px;">`;
+      html += `<div class="rownum">${rowNum}${rd.exitRow?' <span class="exit-tag" title="Emergency Exit Row">EXIT</span>':''}</div>`;
+      masterLetters.forEach(letter=>{
+        const gapStyle = aisleBefore.has(letter) ? 'margin-left:8px;' : '';
+        if(!rowLetters.has(letter)){
+          html += `<div class="seat-blank" style="${gapStyle}"></div>`;
+          return;
+        }
+        const id = rowNum+letter;
+        const occ = bySeat[id];
+        let statusClass = 'notcheckedin';
+        let title = 'Empty / not checked-in';
+        let onclick = '';
+        if(occ){
+          if(occ.legState.checkedIn){
+            statusClass = occ.legState.boarded ? 'boarded' : 'checkedin';
+            title = `${occ.pax.surname}/${occ.pax.given} · PNR ${occ.pnr} · ${occ.legState.boarded?'BOARDED':'not boarded'}`;
+            onclick = `onclick="toggleSeatBoarded('${occ.pnr}','${occ.pax.key}','${flight.id}')"`;
           }
-          html += `<div class="gate-seat ${statusClass} ${rd.exitRow?'exitrow':''}" title="${title}" ${onclick}>${letter}</div>`;
+        }
+        html += `<div class="gate-seat ${statusClass} ${rd.exitRow?'exitrow':''}" style="${gapStyle}" title="${title}" ${onclick}>${letter}</div>`;
       });
-      html += '</div>';
-    });
-    html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
+      html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
     });
   });
   html += '</div>';
