@@ -141,6 +141,10 @@ table tbody tr:hover{background:#eaf1fb;}
 .seat.business{border-color:#c9a95a;}
 .seat.premium{border-color:#c9b98a;}
 .seat.economy{border-color:#5a8ac9;}
+.seat.exitrow{box-shadow:0 0 0 2px #ffb020 inset;}
+.seatrow.exitrow{background:rgba(255,176,32,.08);border-radius:3px;}
+.exit-tag{background:#ffb020;color:#1a1200;font-size:8px;font-weight:800;padding:1px 4px;border-radius:2px;letter-spacing:.3px;}
+.gate-seat.exitrow{box-shadow:0 0 0 2px #ffb020 inset;}
 
 .pax-list{display:flex;flex-direction:column;gap:8px;}
 .pax-card{border:1px solid var(--border);border-radius:2px;padding:9px 10px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:#f7f9fb;}
@@ -935,8 +939,8 @@ function renderAcClassBuilder(cls){
   const rowsList = (acDraft.classes[cls]||[]).slice().sort((a,b)=>a.row-b.row);
   const rowsTable = rowsList.length ? `
     <table style="margin-top:6px">
-      <thead><tr><th>Row</th><th>Groups</th><th></th></tr></thead>
-      <tbody>${rowsList.map(rd=>`<tr><td>${rd.row}</td><td>${groupsToPattern(rd.groups)}</td><td><button class="btn small danger" onclick="removeAcDraftRow('${cls}',${rd.row})">✕</button></td></tr>`).join('')}</tbody>
+      <thead><tr><th>Row</th><th>Groups</th><th>Exit</th><th></th></tr></thead>
+      <tbody>${rowsList.map(rd=>`<tr ${rd.exitRow?'style="background:#fdecec"':''}><td>${rd.row}</td><td>${groupsToPattern(rd.groups)}</td><td>${rd.exitRow?'<span class="badge pending">EXIT</span>':''}</td><td><button class="btn small secondary" onclick="toggleAcDraftRowExit('${cls}',${rd.row})">${rd.exitRow?'Unmark':'Mark Exit'}</button> <button class="btn small danger" onclick="removeAcDraftRow('${cls}',${rd.row})">✕</button></td></tr>`).join('')}</tbody>
     </table>` : `<small class="hint">No rows yet for ${classLabel(cls)}.</small>`;
 
   return `
@@ -947,11 +951,13 @@ function renderAcClassBuilder(cls){
       <div class="field"><label>Row Start</label><input id="ac-${cls}-start" type="number" min="1" style="width:70px"></div>
       <div class="field"><label>Row End</label><input id="ac-${cls}-end" type="number" min="1" style="width:70px"></div>
       <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-${cls}-groups" placeholder="ABC|DEFG|HJK" style="width:160px"></div>
+      <div class="field"><label style="display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="ac-${cls}-exit" style="min-width:auto;width:auto"> Emergency Exit Row</label></div>
       <button class="btn secondary small" onclick="addAcDraftRange('${cls}')">+ Add Row Range</button>
     </div>
     <div class="row" style="margin-top:6px">
       <div class="field"><label>Single Row No.</label><input id="ac-${cls}-singlerow" type="number" min="1" style="width:70px"></div>
       <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-${cls}-singlegroups" placeholder="A|CD|GH|K" style="width:160px"></div>
+      <div class="field"><label style="display:flex;align-items:center;gap:4px;white-space:nowrap"><input type="checkbox" id="ac-${cls}-singleexit" style="min-width:auto;width:auto"> Emergency Exit Row</label></div>
       <button class="btn secondary small" onclick="addAcDraftSingleRow('${cls}')">+ Add / Replace Single Row</button>
     </div>
   </div>`;
@@ -987,13 +993,14 @@ function addAcDraftRange(cls){
   const start = parseInt(val(`ac-${cls}-start`));
   const end = parseInt(val(`ac-${cls}-end`));
   const groups = parseGroups(val(`ac-${cls}-groups`)||'');
+  const exitRow = !!document.getElementById(`ac-${cls}-exit`)?.checked;
   if(!start || !end || end<start) return notify('Enter a valid row start/end.');
   if(groups.length===0) return notify('Enter a seat groups pattern, e.g. ABC|DEFG|HJK.');
   const list = acDraft.classes[cls];
   for(let r=start; r<=end; r++){
     const existing = list.find(rd=>rd.row===r);
-    if(existing) existing.groups = groups;
-    else list.push({ row:r, groups });
+    if(existing){ existing.groups = groups; existing.exitRow = exitRow; }
+    else list.push({ row:r, groups, exitRow });
   }
   render();
 }
@@ -1001,12 +1008,19 @@ function addAcDraftRange(cls){
 function addAcDraftSingleRow(cls){
   const row = parseInt(val(`ac-${cls}-singlerow`));
   const groups = parseGroups(val(`ac-${cls}-singlegroups`)||'');
+  const exitRow = !!document.getElementById(`ac-${cls}-singleexit`)?.checked;
   if(!row) return notify('Enter a row number.');
   if(groups.length===0) return notify('Enter a seat groups pattern, e.g. A|CD|GH|K.');
   const list = acDraft.classes[cls];
   const existing = list.find(rd=>rd.row===row);
-  if(existing) existing.groups = groups;
-  else list.push({ row, groups });
+  if(existing){ existing.groups = groups; existing.exitRow = exitRow; }
+  else list.push({ row, groups, exitRow });
+  render();
+}
+
+function toggleAcDraftRowExit(cls, row){
+  const rd = acDraft.classes[cls].find(x=>x.row===row);
+  if(rd) rd.exitRow = !rd.exitRow;
   render();
 }
 
@@ -1391,14 +1405,14 @@ function drawSeatmapIfNeeded(){
   ['business','premium','economy'].forEach(cls=>{
     classRowDefs(ac, cls).forEach(rd=>{
       const rowNum = rd.row;
-      html += `<div class="seatrow"><div class="rownum">${rowNum}</div>`;
+      html += `<div class="seatrow ${rd.exitRow?'exitrow':''}"><div class="rownum">${rowNum}${rd.exitRow?' <span class="exit-tag" title="Emergency Exit Row">EXIT</span>':''}</div>`;
       rd.groups.forEach(g=>{
         html += '<div class="seatgroup">';
         g.forEach(letter=>{
           const id = rowNum+letter;
           const isTaken = takenIds.has(id) && curSeat!==id;
           const isSelected = curSeat===id;
-          html += `<div class="seat ${cls} ${isTaken?'taken':''} ${isSelected?'selected':''}" ${isTaken?'':`onclick="pickSeat('${id}','${cls}')"`}>${letter}</div>`;
+          html += `<div class="seat ${cls} ${rd.exitRow?'exitrow':''} ${isTaken?'taken':''} ${isSelected?'selected':''}" ${isTaken?'':`onclick="pickSeat('${id}','${cls}',${rd.exitRow?'true':'false'})"`}>${letter}</div>`;
         });
         html += '</div>';
       });
@@ -1409,13 +1423,16 @@ function drawSeatmapIfNeeded(){
   document.getElementById('seatmap-container').innerHTML = html;
 }
 
-function pickSeat(seatId,cls){
+function pickSeat(seatId,cls,isExit){
   const booking = STATE.bookings.find(b=>b.pnr===STATE.selection.pnr);
   const pax = booking.passengers.find(p=>p.key===STATE.selection.passengerKey);
   const flightId = STATE.selection.seatLegId || STATE.selection.flightId;
   if(!pax.legs[flightId]) pax.legs[flightId] = { seat:null, checkedIn:false, seq:null, boarded:false };
   pax.legs[flightId].seat = seatId; pax.cls = cls;
   saveState(); render();
+  if(isExit && pax.title==='CHD'){
+    notify(`${pax.surname}/${pax.given} is a child (CHD) seated in an emergency exit row — airline policy normally requires reassignment.`, 'err');
+  }
 }
 
 function autoAssignSeat(flightId, cls, excludePassengerKey){
@@ -1903,6 +1920,7 @@ function renderGate(){
       <span><span class="sw" style="background:#1a7f37"></span>Boarded</span>
       <span><span class="sw" style="background:#7a5a12"></span>Checked-in, not boarded</span>
       <span><span class="sw" style="background:#0e2a4a;border:1px solid #22344a"></span>Not checked-in / empty</span>
+      <span><span class="sw" style="background:#0e2a4a;border:2px solid #ffb020"></span>Emergency Exit Row</span>
       <span style="color:#5a6b7d">Click a seat to toggle boarded status</span>
     </div>
     </div>
@@ -1925,7 +1943,7 @@ function renderGateSeatmapHTML(flight){
   ['business','premium','economy'].forEach(cls=>{
     classRowDefs(ac, cls).forEach(rd=>{
       const rowNum = rd.row;
-      html += `<div class="seatrow"><div class="rownum">${rowNum}</div>`;
+      html += `<div class="seatrow ${rd.exitRow?'exitrow':''}"><div class="rownum">${rowNum}${rd.exitRow?' <span class="exit-tag" title="Emergency Exit Row">EXIT</span>':''}</div>`;
       rd.groups.forEach(g=>{
         html += '<div class="seatgroup">';
         g.forEach(letter=>{
@@ -1941,7 +1959,7 @@ function renderGateSeatmapHTML(flight){
               onclick = `onclick="toggleSeatBoarded('${occ.pnr}','${occ.pax.key}','${flight.id}')"`;
             }
           }
-          html += `<div class="gate-seat ${statusClass}" title="${title}" ${onclick}>${letter}</div>`;
+          html += `<div class="gate-seat ${statusClass} ${rd.exitRow?'exitrow':''}" title="${title}" ${onclick}>${letter}</div>`;
       });
       html += '</div>';
     });
