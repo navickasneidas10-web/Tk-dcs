@@ -378,16 +378,26 @@ function getAircraftByReg(reg){
   return STATE.aircraftRegistry.find(a=>a.reg===reg);
 }
 
+/* Normalizes a class definition into an array of {row, groups} entries,
+   regardless of whether it was stored the old way (rows:[...], groups:[[...]])
+   or the new way (array of per-row definitions, allowing irregular layouts). */
+function normalizeAcClass(clsDef){
+  if(!clsDef) return [];
+  if(Array.isArray(clsDef)) return clsDef;
+  return (clsDef.rows||[]).map(r=>({ row:r, groups: clsDef.groups }));
+}
+function classRowDefs(ac, cls){
+  return normalizeAcClass(ac.classes[cls]).slice().sort((a,b)=>a.row-b.row);
+}
+
 function buildSeatList(tailNumber){
   const ac = getAircraftByReg(tailNumber);
   if(!ac) return [];
   const seats = [];
   ["business","premium","economy"].forEach(cls=>{
-    const def = ac.classes[cls];
-    if(!def) return;
-    def.rows.forEach(r=>{
-      def.groups.forEach(g=> g.forEach(letter=>{
-        seats.push({ id:r+letter, row:r, letter, cls });
+    classRowDefs(ac,cls).forEach(rd=>{
+      rd.groups.forEach(g=> g.forEach(letter=>{
+        seats.push({ id:rd.row+letter, row:rd.row, letter, cls });
       }));
     });
   });
@@ -412,6 +422,9 @@ let STATE = {
 };
 
 let applyingRemoteUpdate = false; // guards against re-broadcasting a change we just received
+let pushInFlight = false;
+let pushQueuedAgain = false;
+let pushDebounceTimer = null;
 
 async function loadState(){
   // 1) fast local cache first, so the UI has something to show immediately
@@ -422,33 +435,58 @@ async function loadState(){
 
   // 2) if Supabase is configured, pull the shared copy (source of truth) and subscribe to live changes
   if(sbClient){
-    try{
-      const { data, error } = await sbClient.from('tkdcs_state').select('data').eq('id', SUPABASE_ROW_ID).maybeSingle();
-      if(error) throw error;
-      if(data && data.data){ STATE = data.data; }
-      subscribeToRemoteChanges();
-    }catch(e){
-      console.error('supabase load error', e);
-      notify('Could not reach the shared database — using this device\'s local copy for now.', 'err');
+    let loaded = false;
+    for(let attempt=0; attempt<2 && !loaded; attempt++){
+      try{
+        const { data, error } = await sbClient.from('tkdcs_state').select('data').eq('id', SUPABASE_ROW_ID).maybeSingle();
+        if(error) throw error;
+        if(data && data.data){ STATE = data.data; }
+        loaded = true;
+        subscribeToRemoteChanges();
+      }catch(e){
+        console.error('supabase load error', e);
+        if(attempt===0){ await new Promise(r=>setTimeout(r,1500)); } // one quick retry before giving up
+      }
     }
+    if(!loaded) notify('Could not reach the shared database — showing this device\'s local copy. Changes made now may not sync until connection is restored.', 'err');
   }
 
   if(!STATE.aircraftRegistry) STATE.aircraftRegistry = [];
+  if(!STATE.__rev) STATE.__rev = 0;
   if(STATE.flights.length===0) seedDemoData();
   render();
 }
 
 function saveState(){
+  // bump a revision counter so late-arriving/out-of-order network responses
+  // can never clobber newer local state (see subscribeToRemoteChanges below)
+  STATE.__rev = (STATE.__rev||0) + 1;
+
   // local cache: instant, always works even if offline or Supabase isn't configured
   try{ localStorage.setItem('tkdcs-state-en', JSON.stringify(STATE)); }
   catch(e){ console.error('local storage error', e); }
 
-  // shared database: fire-and-forget so the UI never waits on network
-  if(sbClient && !applyingRemoteUpdate){
-    sbClient.from('tkdcs_state')
-      .upsert({ id: SUPABASE_ROW_ID, data: STATE, updated_at: new Date().toISOString() })
-      .then(({error})=>{ if(error){ console.error('supabase save error', error); notify('Change saved locally, but syncing to the shared database failed.', 'err'); } });
+  if(!sbClient || applyingRemoteUpdate) return;
+
+  // debounce rapid-fire edits, then push through a single serialized channel —
+  // never more than one upsert in flight, so responses can't complete out of order
+  clearTimeout(pushDebounceTimer);
+  pushDebounceTimer = setTimeout(pushToSupabase, 350);
+}
+
+async function pushToSupabase(){
+  if(pushInFlight){ pushQueuedAgain = true; return; }
+  pushInFlight = true;
+  const snapshot = STATE; // read fresh at send time, not at the moment saveState() was first called
+  try{
+    const { error } = await sbClient.from('tkdcs_state')
+      .upsert({ id: SUPABASE_ROW_ID, data: snapshot, updated_at: new Date().toISOString() });
+    if(error){ console.error('supabase save error', error); notify('Change saved locally, but syncing to the shared database failed.', 'err'); }
+  }catch(e){
+    console.error('supabase save exception', e);
   }
+  pushInFlight = false;
+  if(pushQueuedAgain){ pushQueuedAgain = false; pushToSupabase(); }
 }
 
 let remoteChannel = null;
@@ -457,6 +495,9 @@ function subscribeToRemoteChanges(){
   remoteChannel = sbClient.channel('tkdcs-state-changes')
     .on('postgres_changes', { event:'*', schema:'public', table:'tkdcs_state', filter:`id=eq.${SUPABASE_ROW_ID}` }, (payload)=>{
       if(payload.new && payload.new.data){
+        const incomingRev = payload.new.data.__rev || 0;
+        const currentRev = STATE.__rev || 0;
+        if(incomingRev < currentRev) return; // stale/out-of-order message — ignore, we already have something newer
         applyingRemoteUpdate = true;
         STATE = payload.new.data;
         try{ localStorage.setItem('tkdcs-state-en', JSON.stringify(STATE)); }catch(e){}
@@ -834,21 +875,26 @@ function apisStatus(p,f){
 ===================================================================== */
 function renderAircraft(){
   const rows = STATE.aircraftRegistry.map(a=>{
-    const biz = a.classes.business ? a.classes.business.rows.length : 0;
-    const prem = a.classes.premium ? a.classes.premium.rows.length : 0;
-    const eco = a.classes.economy ? a.classes.economy.rows.length : 0;
-    const seatCount = ['business','premium','economy'].reduce((s,c)=> s + (a.classes[c]? a.classes[c].rows.length*a.classes[c].groups.reduce((x,g)=>x+g.length,0) : 0), 0);
+    const bizN = classRowDefs(a,'business').length;
+    const premN = classRowDefs(a,'premium').length;
+    const ecoN = classRowDefs(a,'economy').length;
+    const seatCount = ['business','premium','economy'].reduce((s,c)=> s + classRowDefs(a,c).reduce((x,rd)=>x+rd.groups.reduce((y,g)=>y+g.length,0),0), 0);
     const usedBy = STATE.flights.filter(f=>f.tailNumber===a.reg).length;
     return `<tr>
       <td><b>${a.reg}</b></td><td>${a.typeLabel}</td>
-      <td>${biz?'rows '+a.classes.business.rows[0]+'-'+a.classes.business.rows.slice(-1):'—'}</td>
-      <td>${prem?'rows '+a.classes.premium.rows[0]+'-'+a.classes.premium.rows.slice(-1):'—'}</td>
-      <td>${eco?'rows '+a.classes.economy.rows[0]+'-'+a.classes.economy.rows.slice(-1):'—'}</td>
+      <td>${bizN} row(s)</td>
+      <td>${premN} row(s)</td>
+      <td>${ecoN} row(s)</td>
       <td>${seatCount}</td>
       <td>${usedBy} flight(s)</td>
-      <td><button class="btn small danger" ${usedBy?'disabled title="In use by a flight"':''} onclick="deleteAircraft('${a.reg}')">Delete</button></td>
+      <td style="white-space:nowrap">
+        <button class="btn small secondary" onclick="startEditAircraft('${a.reg}')">Edit</button>
+        <button class="btn small danger" ${usedBy?'disabled title="In use by a flight"':''} onclick="deleteAircraft('${a.reg}')">Delete</button>
+      </td>
     </tr>`;
   }).join('');
+
+  const isEditing = !!acDraft.editingReg;
 
   return `
   <div class="panel">
@@ -862,97 +908,148 @@ function renderAircraft(){
   </div>
 
   <div class="panel">
-    <div class="panel-title">Register Aircraft / Build Cabin Layout</div>
+    <div class="panel-title">${isEditing ? 'Edit Aircraft — '+acDraft.reg : 'Register Aircraft / Build Cabin Layout'}</div>
     <div class="panel-body">
     <div class="row">
-      <div class="field"><label>Registration (Tail No.)</label><input id="ac-reg" placeholder="TC-LJB" style="text-transform:uppercase"></div>
-      <div class="field"><label>Aircraft Type</label><input id="ac-type" placeholder="Boeing 777-300ER"></div>
-      <button class="btn secondary small" onclick="prefillPreset('Narrowbody (A321)')">Prefill: Narrowbody A321</button>
-      <button class="btn secondary small" onclick="prefillPreset('Widebody (B777-300ER)')">Prefill: Widebody B777</button>
-      <button class="btn secondary small" onclick="clearAcForm()">Clear</button>
+      <div class="field"><label>Registration (Tail No.)</label><input id="ac-reg" placeholder="TC-LJB" value="${acDraft.reg}" style="text-transform:uppercase" oninput="acDraft.reg=this.value.toUpperCase()"></div>
+      <div class="field"><label>Aircraft Type</label><input id="ac-type" placeholder="Boeing 777-300ER" value="${acDraft.typeLabel}" oninput="acDraft.typeLabel=this.value"></div>
+      ${!isEditing ? `
+      <button class="btn secondary small" onclick="prefillAcDraft('Narrowbody (A321)')">Prefill: Narrowbody A321</button>
+      <button class="btn secondary small" onclick="prefillAcDraft('Widebody (B777-300ER)')">Prefill: Widebody B777</button>
+      ` : ''}
+      <button class="btn secondary small" onclick="clearAcDraft()">${isEditing?'Cancel Edit':'Clear'}</button>
     </div>
 
-    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
-      <div class="row">
-        <div class="field"><label><input type="checkbox" id="ac-biz-on" checked style="min-width:auto;width:auto"> Business</label></div>
-        <div class="field"><label>Row Start</label><input id="ac-biz-start" type="number" min="1" style="width:70px"></div>
-        <div class="field"><label>Row End</label><input id="ac-biz-end" type="number" min="1" style="width:70px"></div>
-        <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-biz-groups" placeholder="A|CD|GH|K" style="width:160px"></div>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <div class="field"><label><input type="checkbox" id="ac-prem-on" style="min-width:auto;width:auto"> Premium Economy</label></div>
-        <div class="field"><label>Row Start</label><input id="ac-prem-start" type="number" min="1" style="width:70px"></div>
-        <div class="field"><label>Row End</label><input id="ac-prem-end" type="number" min="1" style="width:70px"></div>
-        <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-prem-groups" placeholder="AC|DEFG|HK" style="width:160px"></div>
-      </div>
-      <div class="row" style="margin-top:8px">
-        <div class="field"><label><input type="checkbox" id="ac-eco-on" checked style="min-width:auto;width:auto"> Economy</label></div>
-        <div class="field"><label>Row Start</label><input id="ac-eco-start" type="number" min="1" style="width:70px"></div>
-        <div class="field"><label>Row End</label><input id="ac-eco-end" type="number" min="1" style="width:70px"></div>
-        <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-eco-groups" placeholder="ABC|DEFG|HJK" style="width:160px"></div>
-      </div>
-    </div>
+    ${['business','premium','economy'].map(cls=>renderAcClassBuilder(cls)).join('')}
 
     <div class="row" style="margin-top:14px">
-      <button class="btn" onclick="addAircraft()">+ Save Aircraft to Registry</button>
+      <button class="btn" onclick="submitAcDraft()">${isEditing?'Save Changes':'+ Save Aircraft to Registry'}</button>
     </div>
-    <small class="hint">Seat Groups pattern: letters within a block sit together, "|" marks an aisle. Example "A|CD|GH|K" renders a 1-2-2-1 wide-body business layout across the row range you set.</small>
+    <small class="hint">Add rows in a range (same seat pattern repeated) or one row at a time (for irregular layouts — e.g. row 1 wider than the rest). Seat Groups pattern: letters within a block sit together, "|" marks an aisle. Example "A|CD|GH|K" renders a 1-2-2-1 layout.</small>
     </div>
   </div>
   `;
 }
 
-function prefillPreset(name){
+function renderAcClassBuilder(cls){
+  const rowsList = (acDraft.classes[cls]||[]).slice().sort((a,b)=>a.row-b.row);
+  const rowsTable = rowsList.length ? `
+    <table style="margin-top:6px">
+      <thead><tr><th>Row</th><th>Groups</th><th></th></tr></thead>
+      <tbody>${rowsList.map(rd=>`<tr><td>${rd.row}</td><td>${groupsToPattern(rd.groups)}</td><td><button class="btn small danger" onclick="removeAcDraftRow('${cls}',${rd.row})">✕</button></td></tr>`).join('')}</tbody>
+    </table>` : `<small class="hint">No rows yet for ${classLabel(cls)}.</small>`;
+
+  return `
+  <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px;">
+    <b style="font-size:12px;color:var(--navy-dk)">${classLabel(cls)}</b>
+    ${rowsTable}
+    <div class="row" style="margin-top:8px">
+      <div class="field"><label>Row Start</label><input id="ac-${cls}-start" type="number" min="1" style="width:70px"></div>
+      <div class="field"><label>Row End</label><input id="ac-${cls}-end" type="number" min="1" style="width:70px"></div>
+      <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-${cls}-groups" placeholder="ABC|DEFG|HJK" style="width:160px"></div>
+      <button class="btn secondary small" onclick="addAcDraftRange('${cls}')">+ Add Row Range</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <div class="field"><label>Single Row No.</label><input id="ac-${cls}-singlerow" type="number" min="1" style="width:70px"></div>
+      <div class="field"><label>Seat Groups (pipe = aisle)</label><input id="ac-${cls}-singlegroups" placeholder="A|CD|GH|K" style="width:160px"></div>
+      <button class="btn secondary small" onclick="addAcDraftSingleRow('${cls}')">+ Add / Replace Single Row</button>
+    </div>
+  </div>`;
+}
+
+function newAcDraft(){
+  return { editingReg:null, reg:'', typeLabel:'', classes:{business:[],premium:[],economy:[]} };
+}
+let acDraft = newAcDraft();
+
+function prefillAcDraft(name){
   const tpl = AIRCRAFT_PRESETS[name];
-  setIfExists('ac-type', name.replace(/\s*\(.*\)/,''));
-  const set = (cls, prefix)=>{
-    const def = tpl[cls];
-    const onBox = document.getElementById(`ac-${prefix}-on`);
-    if(!def){ if(onBox) onBox.checked=false; return; }
-    if(onBox) onBox.checked=true;
-    setIfExists(`ac-${prefix}-start`, def.rows[0]);
-    setIfExists(`ac-${prefix}-end`, def.rows[def.rows.length-1]);
-    setIfExists(`ac-${prefix}-groups`, groupsToPattern(def.groups));
+  acDraft.typeLabel = name.replace(/\s*\(.*\)/,'');
+  ['business','premium','economy'].forEach(cls=>{
+    acDraft.classes[cls] = normalizeAcClass(tpl[cls]);
+  });
+  render();
+}
+
+function clearAcDraft(){ acDraft = newAcDraft(); render(); }
+
+function startEditAircraft(reg){
+  const ac = getAircraftByReg(reg);
+  if(!ac) return;
+  acDraft = {
+    editingReg: reg, reg: ac.reg, typeLabel: ac.typeLabel,
+    classes: { business: classRowDefs(ac,'business'), premium: classRowDefs(ac,'premium'), economy: classRowDefs(ac,'economy') }
   };
-  set('business','biz'); set('premium','prem'); set('economy','eco');
-}
-function setIfExists(id,v){ const e=document.getElementById(id); if(e) e.value=v; }
-function clearAcForm(){
-  ['ac-reg','ac-type','ac-biz-start','ac-biz-end','ac-biz-groups','ac-prem-start','ac-prem-end','ac-prem-groups','ac-eco-start','ac-eco-end','ac-eco-groups']
-    .forEach(id=>setIfExists(id,''));
+  render();
 }
 
-function addAircraft(){
-  const reg = val('ac-reg').toUpperCase();
-  if(!reg) return notify('Enter a registration (tail number).');
-  if(getAircraftByReg(reg)) return notify('This registration already exists in the registry.');
-  const typeLabel = val('ac-type') || reg;
-
-  function readClass(prefix){
-    const on = document.getElementById(`ac-${prefix}-on`).checked;
-    if(!on) return null;
-    const start = parseInt(val(`ac-${prefix}-start`));
-    const end = parseInt(val(`ac-${prefix}-end`));
-    const groups = parseGroups(val(`ac-${prefix}-groups`)||'');
-    if(!start || !end || end<start || groups.length===0) return null;
-    return { rows: range(start,end), groups };
+function addAcDraftRange(cls){
+  const start = parseInt(val(`ac-${cls}-start`));
+  const end = parseInt(val(`ac-${cls}-end`));
+  const groups = parseGroups(val(`ac-${cls}-groups`)||'');
+  if(!start || !end || end<start) return notify('Enter a valid row start/end.');
+  if(groups.length===0) return notify('Enter a seat groups pattern, e.g. ABC|DEFG|HJK.');
+  const list = acDraft.classes[cls];
+  for(let r=start; r<=end; r++){
+    const existing = list.find(rd=>rd.row===r);
+    if(existing) existing.groups = groups;
+    else list.push({ row:r, groups });
   }
+  render();
+}
+
+function addAcDraftSingleRow(cls){
+  const row = parseInt(val(`ac-${cls}-singlerow`));
+  const groups = parseGroups(val(`ac-${cls}-singlegroups`)||'');
+  if(!row) return notify('Enter a row number.');
+  if(groups.length===0) return notify('Enter a seat groups pattern, e.g. A|CD|GH|K.');
+  const list = acDraft.classes[cls];
+  const existing = list.find(rd=>rd.row===row);
+  if(existing) existing.groups = groups;
+  else list.push({ row, groups });
+  render();
+}
+
+function removeAcDraftRow(cls, row){
+  acDraft.classes[cls] = acDraft.classes[cls].filter(rd=>rd.row!==row);
+  render();
+}
+
+function submitAcDraft(){
+  const reg = acDraft.reg.trim().toUpperCase();
+  if(!reg) return notify('Enter a registration (tail number).');
+  const typeLabel = acDraft.typeLabel.trim() || reg;
+  const existingOther = getAircraftByReg(reg);
+  if(!acDraft.editingReg && existingOther) return notify('This registration already exists in the registry.');
+  if(acDraft.editingReg && existingOther && reg!==acDraft.editingReg) return notify('Another aircraft already uses that registration.');
 
   const classes = {
-    business: readClass('biz'),
-    premium: readClass('prem'),
-    economy: readClass('eco')
+    business: acDraft.classes.business.length ? acDraft.classes.business.slice() : null,
+    premium: acDraft.classes.premium.length ? acDraft.classes.premium.slice() : null,
+    economy: acDraft.classes.economy.length ? acDraft.classes.economy.slice() : null
   };
   if(!classes.business && !classes.premium && !classes.economy){
-    return notify('Define at least one valid cabin class (row range + seat groups).');
+    return notify('Add at least one row to at least one cabin class.');
   }
-  STATE.aircraftRegistry.push({ reg, typeLabel, classes });
+
+  if(acDraft.editingReg){
+    const ac = getAircraftByReg(acDraft.editingReg);
+    const oldReg = ac.reg;
+    ac.reg = reg; ac.typeLabel = typeLabel; ac.classes = classes;
+    if(oldReg !== reg){
+      STATE.flights.forEach(f=>{ if(f.tailNumber===oldReg) f.tailNumber = reg; });
+    }
+  }else{
+    STATE.aircraftRegistry.push({ reg, typeLabel, classes });
+  }
+  acDraft = newAcDraft();
   saveState(); render();
 }
 
 function deleteAircraft(reg){
   if(STATE.flights.some(f=>f.tailNumber===reg)) return notify('This aircraft is assigned to a flight and cannot be deleted.');
   STATE.aircraftRegistry = STATE.aircraftRegistry.filter(a=>a.reg!==reg);
+  if(acDraft.editingReg===reg) acDraft = newAcDraft();
   saveState(); render();
 }
 
@@ -1286,31 +1383,27 @@ function drawSeatmapIfNeeded(){
   }
   const ac = getAircraftByReg(flight.tailNumber);
   if(!ac){ document.getElementById('seatmap-container').innerHTML = '<div class="empty">This flight has no registered aircraft/cabin layout.</div>'; return; }
-  const seats = buildSeatList(flight.tailNumber);
   const takenIds = new Set();
   STATE.bookings.filter(b=>b.legs.includes(flight.id)).forEach(b=>b.passengers.forEach(p=>{ const s=p.legs[flight.id]?.seat; if(s) takenIds.add(s); }));
   const curSeat = pax.legs[flight.id]?.seat;
 
-  const rowsMap = {};
-  seats.forEach(s=>{ (rowsMap[s.row]=rowsMap[s.row]||[]).push(s); });
-
   let html = '<div class="seatmap">';
-  Object.keys(rowsMap).map(Number).sort((a,b)=>a-b).forEach(rowNum=>{
-    const rowSeats = rowsMap[rowNum];
-    const cls = rowSeats[0].cls;
-    const groupDefs = ac.classes[cls].groups;
-    html += `<div class="seatrow"><div class="rownum">${rowNum}</div>`;
-    groupDefs.forEach(g=>{
-      html += '<div class="seatgroup">';
-      g.forEach(letter=>{
-        const id = rowNum+letter;
-        const isTaken = takenIds.has(id) && curSeat!==id;
-        const isSelected = curSeat===id;
-        html += `<div class="seat ${cls} ${isTaken?'taken':''} ${isSelected?'selected':''}" ${isTaken?'':`onclick="pickSeat('${id}','${cls}')"`}>${letter}</div>`;
+  ['business','premium','economy'].forEach(cls=>{
+    classRowDefs(ac, cls).forEach(rd=>{
+      const rowNum = rd.row;
+      html += `<div class="seatrow"><div class="rownum">${rowNum}</div>`;
+      rd.groups.forEach(g=>{
+        html += '<div class="seatgroup">';
+        g.forEach(letter=>{
+          const id = rowNum+letter;
+          const isTaken = takenIds.has(id) && curSeat!==id;
+          const isSelected = curSeat===id;
+          html += `<div class="seat ${cls} ${isTaken?'taken':''} ${isSelected?'selected':''}" ${isTaken?'':`onclick="pickSeat('${id}','${cls}')"`}>${letter}</div>`;
+        });
+        html += '</div>';
       });
-      html += '</div>';
+      html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
     });
-    html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
   });
   html += '</div>';
   document.getElementById('seatmap-container').innerHTML = html;
@@ -1820,7 +1913,6 @@ function renderGate(){
 function renderGateSeatmapHTML(flight){
   const ac = getAircraftByReg(flight.tailNumber);
   if(!ac) return '<div class="empty">This flight has no registered aircraft/cabin layout.</div>';
-  const seats = buildSeatList(flight.tailNumber);
   const bySeat = {}; // seatId -> {pnr, pax, legState}
   STATE.bookings.filter(b=>b.legs.includes(flight.id)).forEach(b=>{
     b.passengers.forEach(p=>{
@@ -1828,35 +1920,33 @@ function renderGateSeatmapHTML(flight){
       if(ls && ls.seat) bySeat[ls.seat] = { pnr:b.pnr, pax:p, legState:ls };
     });
   });
-  const rowsMap = {};
-  seats.forEach(s=>{ (rowsMap[s.row]=rowsMap[s.row]||[]).push(s); });
 
   let html = '<div class="gate-seatmap">';
-  Object.keys(rowsMap).map(Number).sort((a,b)=>a-b).forEach(rowNum=>{
-    const rowSeats = rowsMap[rowNum];
-    const cls = rowSeats[0].cls;
-    const groupDefs = ac.classes[cls].groups;
-    html += `<div class="seatrow"><div class="rownum">${rowNum}</div>`;
-    groupDefs.forEach(g=>{
-      html += '<div class="seatgroup">';
-      g.forEach(letter=>{
-        const id = rowNum+letter;
-        const occ = bySeat[id];
-        let statusClass = 'notcheckedin';
-        let title = 'Empty / not checked-in';
-        let onclick = '';
-        if(occ){
-          if(occ.legState.checkedIn){
-            statusClass = occ.legState.boarded ? 'boarded' : 'checkedin';
-            title = `${occ.pax.surname}/${occ.pax.given} · PNR ${occ.pnr} · ${occ.legState.boarded?'BOARDED':'not boarded'}`;
-            onclick = `onclick="toggleSeatBoarded('${occ.pnr}','${occ.pax.key}','${flight.id}')"`;
+  ['business','premium','economy'].forEach(cls=>{
+    classRowDefs(ac, cls).forEach(rd=>{
+      const rowNum = rd.row;
+      html += `<div class="seatrow"><div class="rownum">${rowNum}</div>`;
+      rd.groups.forEach(g=>{
+        html += '<div class="seatgroup">';
+        g.forEach(letter=>{
+          const id = rowNum+letter;
+          const occ = bySeat[id];
+          let statusClass = 'notcheckedin';
+          let title = 'Empty / not checked-in';
+          let onclick = '';
+          if(occ){
+            if(occ.legState.checkedIn){
+              statusClass = occ.legState.boarded ? 'boarded' : 'checkedin';
+              title = `${occ.pax.surname}/${occ.pax.given} · PNR ${occ.pnr} · ${occ.legState.boarded?'BOARDED':'not boarded'}`;
+              onclick = `onclick="toggleSeatBoarded('${occ.pnr}','${occ.pax.key}','${flight.id}')"`;
+            }
           }
-        }
-        html += `<div class="gate-seat ${statusClass}" title="${title}" ${onclick}>${letter}</div>`;
+          html += `<div class="gate-seat ${statusClass}" title="${title}" ${onclick}>${letter}</div>`;
       });
       html += '</div>';
     });
     html += `<span class="badge ${cls}" style="margin-left:8px">${classLabel(cls)}</span></div>`;
+    });
   });
   html += '</div>';
   return html;
