@@ -153,15 +153,15 @@ table tbody tr:hover{background:#eaf1fb;}
 
 /* ===== BOARDING PASS — replica of TK ATB stock (main coupon + agent stub) ===== */
 .pass{
-  width:230mm;height:90mm;background:#fdfdfb;position:relative;overflow:hidden;
+  width:203mm;height:76mm;background:#fdfdfb;position:relative;overflow:hidden;
   border:1px solid #bbb;color:#111;display:flex;
   font-family:'VT323','Share Tech Mono',monospace;
 }
 .pass .coupon{display:flex;flex-direction:column;position:relative;height:100%;}
-.pass .coupon.main{width:64%;border-right:2px dashed #999;}
-.pass .coupon.stub{width:36%;}
+.pass .coupon.main{width:73%;border-right:2px dashed #999;}
+.pass .coupon.stub{width:27%;}
 .pass .redhead{
-  background:#c8102e;color:#fff;display:flex;align-items:center;gap:6px;padding:2.5mm 4mm;
+  background:#c8102e;color:#fff;display:flex;align-items:center;gap:6px;padding:1.8mm 4mm;
   font-family:Arial,Helvetica,sans-serif;flex-shrink:0;
 }
 .pass .redhead .bird{width:22px;height:15px;flex-shrink:0;color:#fff;}
@@ -174,42 +174,41 @@ table tbody tr:hover{background:#eaf1fb;}
 
 .pass .body{flex:1;display:flex;position:relative;overflow:hidden;}
 .pass .barcode-col{
-  width:28mm;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:2mm 0;border-right:1px solid #ccc;overflow:hidden;
+  width:24mm;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:2mm 0;border-right:1px solid #ccc;overflow:hidden;
 }
-.pass .barcode-col canvas{width:23mm;height:96%;display:block;}
-.pass .content{flex:1;padding:2.5mm 5mm;display:flex;flex-direction:column;gap:1mm;position:relative;}
+.pass .barcode-col canvas{width:21mm;height:96%;display:block;}
+.pass .content{flex:1;padding:1.5mm 4mm;display:flex;flex-direction:column;gap:0.5mm;position:relative;}
 
 .pass .stampband{
   position:absolute;top:1mm;right:6mm;font-family:'VT323',monospace;font-weight:700;font-size:21px;letter-spacing:2.5px;
   color:#111;opacity:.85;transform:rotate(-2deg);z-index:3;
 }
-.pass .toprow{display:flex;justify-content:space-between;font-size:17px;margin-top:6mm;}
-.pass .toprow .fqtv{font-size:12px;text-align:right;line-height:1.3;}
-.pass .flightline{display:flex;gap:4mm;font-size:16px;margin-top:1mm;flex-wrap:wrap;align-items:baseline;}
-.pass .flightline .apis{margin-left:auto;font-size:12px;text-align:right;line-height:1.3;}
+.pass .toprow{display:flex;justify-content:space-between;align-items:baseline;font-size:22px;margin-top:2mm;}
+.pass .toprow .fqtv{font-size:18px;text-align:right;}
+.pass .flightline{display:flex;gap:3mm;font-size:21px;margin-top:0.5mm;flex-wrap:wrap;align-items:baseline;}
 
-.pass .bigfields{display:flex;gap:3.5mm;margin-top:2mm;}
-.pass .bigfields .bf{border:1.4px solid #111;padding:1.2mm 2.5mm;text-align:center;min-width:23mm;}
-.pass .bigfields .bf b{display:block;font-size:6px;font-family:Arial,sans-serif;color:#333;font-weight:700;letter-spacing:.2px;}
-.pass .bigfields .bf span{font-size:18px;font-weight:700;font-family:'VT323',monospace;}
+.pass .bigfields{display:flex;gap:2.5mm;margin-top:1.5mm;}
+.pass .bigfields .bf{border:1.4px solid #111;padding:1mm 2.5mm;text-align:center;flex:1;}
+.pass .bigfields .bf b{display:block;font-size:10px;font-family:'VT323',monospace;color:#333;font-weight:700;letter-spacing:.2px;}
+.pass .bigfields .bf span{font-size:40px;font-weight:700;font-family:'VT323',monospace;line-height:1.1;}
 
-.pass .destcity{font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:19px;margin-top:2mm;letter-spacing:.3px;}
-.pass .ticketline{font-size:13px;margin-top:auto;padding-top:1.5mm;}
-.pass .secline{font-size:11.5px;color:#222;}
-.pass .microtext{font-size:8px;color:#333;font-family:Arial,sans-serif;margin-top:1mm;line-height:1.3;}
+.pass .destcity{font-family:'VT323',monospace;font-weight:800;font-size:38px;margin-top:1mm;letter-spacing:.3px;line-height:1;text-align:center;}
+.pass .ticketline{font-size:17px;font-weight:700;margin-top:auto;padding-top:1mm;}
+.pass .secline{font-size:14px;color:#222;}
+.pass .microtext{font-size:9px;color:#333;font-family:'VT323',monospace;margin-top:0.8mm;line-height:1.25;}
 
 /* stub coupon specific */
-.pass .stubtable{display:grid;grid-template-columns:1fr 1fr;gap:1mm 5mm;font-size:12px;margin-top:1.5mm;}
-.pass .stubtable label{display:block;font-size:6px;font-family:Arial,sans-serif;color:#555;font-weight:700;letter-spacing:.2px;}
-.pass .stub-namebox{font-size:17px;margin-top:5mm;}
-.pass .stub-headrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:7.5px;font-family:Arial,sans-serif;color:#555;font-weight:700;margin-top:2.5mm;border-bottom:1px solid #999;padding-bottom:1mm;}
+.pass .stubtable{display:flex;flex-direction:column;gap:2mm;margin-top:1mm;}
+.pass .stubtable label{display:block;font-size:8px;font-family:'VT323',monospace;color:#555;font-weight:700;letter-spacing:.2px;}
+.pass .stubtable .val{font-size:15px;}
+.pass .stub-headrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:8px;font-family:'VT323',monospace;color:#555;font-weight:700;margin-top:3mm;border-bottom:1px solid #999;padding-bottom:1mm;}
 .pass .stub-valrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:13px;margin-top:1mm;}
-.pass .stub-boxes{display:flex;gap:2.5mm;margin-top:2mm;}
-.pass .stub-boxes .bf{border:1.4px solid #111;padding:1.2mm 2.5mm;text-align:center;flex:1;}
-.pass .stub-boxes .bf b{display:block;font-size:6px;font-family:Arial,sans-serif;color:#333;font-weight:700;}
+.pass .stub-boxes{display:flex;gap:2.5mm;margin-top:3mm;}
+.pass .stub-boxes .bf{border:1.6px solid #111;padding:1.8mm 2.5mm;text-align:center;flex:1;}
+.pass .stub-boxes .bf b{display:block;font-size:9px;font-family:'VT323',monospace;color:#333;font-weight:700;}
 .pass .stub-boxes .bf span{font-size:18px;font-weight:700;}
-.pass .stub-footline{font-size:11.5px;margin-top:auto;padding-top:1.5mm;}
-.pass .stub-star{position:absolute;bottom:2.5mm;right:4mm;font-size:7.5px;text-align:right;font-family:Arial,sans-serif;color:#333;line-height:1.3;}
+.pass .stub-footline{font-size:10px;font-weight:700;margin-top:auto;padding-top:1.5mm;}
+.pass .stub-star{position:absolute;bottom:2.5mm;right:4mm;font-size:8px;text-align:right;font-family:'VT323',monospace;color:#777;line-height:1.3;}
 
 /* qrbox removed — single real PDF417 barcode is now the only machine-readable code */
 
@@ -267,6 +266,9 @@ table tbody tr:hover{background:#eaf1fb;}
   .print-target{position:absolute;top:0;left:0;}
 }
 .offscreen-print{position:absolute;left:-99999px;top:0;width:0;height:0;overflow:hidden;}
+@media print{
+  .offscreen-print{position:static !important;left:auto !important;top:auto !important;width:auto !important;height:auto !important;overflow:visible !important;}
+}
 
 /* Camera */
 .cam-wrap{position:relative;width:420px;max-width:100%;background:#000;border-radius:3px;overflow:hidden;}
@@ -318,7 +320,7 @@ footer.fkeybar .fk b{color:#7fc0ff;margin-right:5px;}
 <div id="toastbar"></div>
 <header class="sysbar">
   <div class="tag">TK</div>
-  <div class="sysname">TURKISH AIRLINES — DEPARTURE CONTROL SYSTEM</div>
+  <div class="sysname">DEPARTURE CONTROL SYSTEM</div>
   <div class="sysver">DCS-SIM v1.1 · Customer Management</div>
   <div class="spacer"></div>
   <div class="userbox">AGENT: IST01 · DUTY: CHECK-IN/BOARDING</div>
@@ -1595,7 +1597,7 @@ function renderPassTab(){
     <div id="bpass-print" class="print-target">
       ${boardingPassHTML(p,f)}
     </div>
-    <small class="hint">Layout replicates a Turkish Airlines ATB stock boarding pass (main coupon + agent stub), size 230mm × 90mm. The tall barcode on the left is a genuine, standards-compliant PDF417 symbol (generated with bwip-js) carrying the same BCBP-style data — it is a real decodable barcode, not a visual placeholder, and the Boarding Gate tab reads it back with an actual PDF417 decoder (ZXing), not a QR-code workaround.</small>
+    <small class="hint">Layout replicates a Turkish Airlines ATB stock boarding pass (main coupon + agent stub), size 203mm × 76mm (official IATA ATB boarding-pass dimensions). The tall barcode on the left is a genuine, standards-compliant PDF417 symbol (generated with bwip-js) carrying the same BCBP-style data — it is a real decodable barcode, not a visual placeholder, and the Boarding Gate tab reads it back with an actual PDF417 decoder (ZXing), not a QR-code workaround.</small>
     </div>
   </div>
   `;
@@ -1625,25 +1627,24 @@ function boardingPassHTML(p,f){
       <div class="body">
         <div class="barcode-col"><canvas id="pdf417-${p.key}-${f.id}" data-bcbp="${encodeURIComponent(bcbp)}"></canvas></div>
         <div class="content">
-          <div class="stampband">${classLabel(p.cls)}</div>
+          <div class="stampband">${p.cls==='business'?classLabel(p.cls):''}</div>
           <div class="toprow">
             <span>${p.surname} ${p.given}</span>
-            <span class="fqtv">FQTV<br>${apisLabel}</span>
+            <span class="fqtv">${apisLabel}</span>
           </div>
           <div class="flightline">
             <span>${AIRLINE.iata} ${fnum}</span><span>${cc}</span><span>${fmtDate(f.date)}</span>
             <span>${f.std}</span><span>${f.from}</span><span>${f.to}</span>
-            <span class="apis">TSA PRECHK</span>
           </div>
           <div class="bigfields">
-            <div class="bf"><b>GATE/KAPI</b><span>${f.gate}</span></div>
+            <div class="bf"><b>GATE/KAPI</b><span>${f.gate!=='-'?f.gate:''}</span></div>
             <div class="bf"><b>BOARDING TIME<br>BİNİŞ SAATİ</b><span>${f.boarding}</span></div>
             <div class="bf"><b>SEAT/KOLTUK</b><span>${p.seat}</span></div>
           </div>
           <div class="destcity">${f.toCity}</div>
           <div class="ticketline">${ticketLine} &nbsp; GROUP: ${group}</div>
           <div class="secline">SEC NO:${p.seq} &nbsp; BAG:${bagCount}/${bagCount} &nbsp; AGT:RZ/P</div>
-          <div class="microtext">BOARDING ENDS 20MIN BEFORE DEPARTURE/UÇAĞA KABUL KALKIŞ SAATİNE 20DK KALA BİTER<br>PLEASE WATCH SCREENS FOR GATE NUMBER AND BOARDING TIME.</div>
+          <div class="microtext">PLEASE WATCH SCREENS FOR GATE NUMBER AND BOARDING TIME.<br>BİNİŞ SAATİ VE KAPI NUMARASI İÇİN LÜTFEN MONİTÖRLERE BAKINIZ..</div>
         </div>
       </div>
     </div>
@@ -1654,14 +1655,12 @@ function boardingPassHTML(p,f){
         <div class="bp-label" style="font-size:8px">BOARDING PASS<br>BİNİŞ KARTI</div>
       </div>
       <div class="body">
-        <div class="content" style="padding:3mm 4mm">
-          <div class="stampband" style="font-size:20px;right:3mm">${classLabel(p.cls)}</div>
-          <div class="stub-namebox">${p.surname} ${p.given}</div>
+        <div class="content" style="padding:1mm 4mm 3mm">
+          <div class="stampband" style="font-size:20px;right:3mm">${p.cls==='business'?classLabel(p.cls):''}</div>
           <div class="stubtable">
-            <div><label>NAME / İSİM</label>${p.surname} ${p.given}</div>
-            <div><label>&nbsp;</label></div>
-            <div><label>FROM / NEREDEN</label>${f.fromCity}</div>
-            <div><label>TO / NEREYE</label>${f.toCity}</div>
+            <div><label>NAME / İSİM</label><div class="val">${p.surname} ${p.given}</div></div>
+            <div><label>FROM / NEREDEN</label><div class="val">${f.fromCity}</div></div>
+            <div><label>TO / NEREYE</label><div class="val">${f.toCity}</div></div>
           </div>
           <div class="stub-headrow"><span>FLIGHT<br>UÇUŞ</span><span>CLASS<br>SINIF</span><span>DATE<br>TARİH</span><span>TIME<br>SAAT</span></div>
           <div class="stub-valrow"><span>${AIRLINE.iata} ${fnum}</span><span>${cc}</span><span>${fmtDate(f.date)}</span><span>${f.std}</span></div>
@@ -1684,17 +1683,17 @@ function boardingPassHTML(p,f){
 function renderVerticalPDF417(canvasEl, text){
   const off = document.createElement('canvas');
   bwipjs.toCanvas(off, {
-    bcid:'pdf417', text:text, scale:3, columns:8, rowheight:3,
+    bcid:'pdf417', text:text, scale:3, columns:8, rowheight:10,
     includetext:false, backgroundcolor:'FFFFFF', paddingwidth:4, paddingheight:4
   });
-  const outW = 210, outH = 640;
+  const outW = 300, outH = 640;
   canvasEl.width = outW; canvasEl.height = outH;
   const ctx = canvasEl.getContext('2d');
   ctx.fillStyle = '#fff'; ctx.fillRect(0,0,outW,outH);
   ctx.save();
   ctx.translate(outW/2, outH/2);
   ctx.rotate(-Math.PI/2);
-  const scale = Math.min(outW/off.height, outH/off.width) * 0.94;
+  const scale = Math.min(outW/off.height, outH/off.width) * 0.98;
   ctx.scale(scale, scale);
   ctx.drawImage(off, -off.width/2, -off.height/2);
   ctx.restore();
@@ -2146,7 +2145,7 @@ function printEl(id){
   const isBagtag = el.querySelector('.bagtag');
   const style = document.createElement('style');
   style.id='dynamic-print-style';
-  if(isPass){ style.innerHTML = `@page{ size:230mm 90mm; margin:0; }`; }
+  if(isPass){ style.innerHTML = `@page{ size:203mm 76mm; margin:0; }`; }
   else if(isBagtag){ style.innerHTML = `@page{ size:52mm 340mm; margin:0; }`; }
   else { style.innerHTML = `@page{ size:A4; margin:14mm; }`; }
   document.head.appendChild(style);
