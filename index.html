@@ -215,29 +215,33 @@ table tbody tr:hover{background:#eaf1fb;}
 /* ===== BAG TAG — vertical strip, top-to-bottom, replica of real TK/handling-agent tag ===== */
 .bagtag-wrap{overflow-x:auto;padding:14px;background:#f7f9fb;border:1px solid var(--border);border-radius:3px;display:flex;justify-content:center;}
 .bagtag{
-  width:46mm;background:#fdfdfb;border:1px solid #999;position:relative;
+  width:52mm;background:#fdfdfb;border:1px solid #999;position:relative;
   font-family:'VT323','Share Tech Mono',monospace;color:#111;
-  padding:0 4mm;
+  padding:0 3mm;
 }
-.bagtag::before,.bagtag::after{
-  content:'';position:absolute;top:0;bottom:0;width:4mm;
-  background:repeating-linear-gradient(180deg,#6bbf59,#6bbf59 8px,#5aab49 8px,#5aab49 16px);
-}
-.bagtag::before{left:0;} .bagtag::after{right:0;}
-.bagtag .barblock{padding:3mm 0 1mm;display:flex;justify-content:center;position:relative;z-index:1;}
+.bagtag > .destrow:first-child{margin-top:3mm;}
+.bagtag .barblock{padding:2mm 0 1mm;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;}
 .bagtag .barblock canvas{width:100%;height:auto;display:block;}
-.bagtag .databox{border-top:1px solid #999;padding:2mm 0;font-size:13px;position:relative;z-index:1;}
+.bagtag .barblock .routehint{font-size:9px;font-family:Arial,sans-serif;color:#555;margin-bottom:1mm;letter-spacing:.3px;line-height:1.3;align-self:flex-start;}
+.bagtag .tagseqbox{
+  border:2px solid #111;text-align:center;font-size:20px;font-weight:800;padding:1mm 0;margin:2mm 0;
+  position:relative;z-index:1;background:#fff;
+}
+.bagtag .perforation{
+  border-top:2px dashed #999;position:relative;margin:3mm -3mm 2mm;z-index:1;
+}
+.bagtag .databox{border-top:1px solid #999;padding:2mm 0;font-size:12px;position:relative;z-index:1;}
 .bagtag .databox .row{display:flex;justify-content:space-between;padding:0.5mm 0;}
 .bagtag .databox .seqbox{display:inline-block;border:1.5px solid #111;padding:0 2mm;font-weight:700;}
 .bagtag .destrow{border:1.5px solid #111;margin:1.5mm 0;padding:1mm 1.5mm;}
 .bagtag .destrow .toplab{font-size:8px;font-family:Arial,sans-serif;font-weight:700;color:#333;}
-.bagtag .destrow .city{font-weight:800;font-size:15px;font-family:Arial,Helvetica,sans-serif;}
-.bagtag .destrow .bottomrow{display:flex;justify-content:space-between;font-size:13px;margin-top:1mm;}
+.bagtag .destrow .city{font-weight:800;font-size:30px;font-family:Arial,Helvetica,sans-serif;line-height:1.1;}
+.bagtag .destrow .bottomrow{display:flex;justify-content:space-between;font-size:12px;margin-top:1mm;}
 .bagtag .destrow .code{font-weight:800;font-size:19px;}
 .bagtag .viabox{border:1.2px solid #555;margin:1.5mm 0;padding:1mm 1.5mm;}
 .bagtag .viabox .toplab{font-size:8px;font-family:Arial,sans-serif;font-weight:700;color:#333;display:flex;justify-content:space-between;}
-.bagtag .viabox .city{font-weight:800;font-size:13px;font-family:Arial,Helvetica,sans-serif;}
-.bagtag .viabox .bottomrow{display:flex;justify-content:space-between;font-size:11px;margin-top:0.5mm;}
+.bagtag .viabox .city{font-weight:800;font-size:30px;font-family:Arial,Helvetica,sans-serif;line-height:1.1;}
+.bagtag .viabox .bottomrow{display:flex;justify-content:space-between;font-size:12px;margin-top:0.5mm;}
 .bagtag .viabox .code{font-weight:800;font-size:15px;}
 .bagtag .viabox.empty{border-style:dashed;color:#888;text-align:center;font-size:10px;padding:1.5mm;}
 .bagtag .stub{border-top:1px dashed #999;padding:2mm 0;position:relative;z-index:1;}
@@ -705,6 +709,26 @@ function renderFlights(){
   </div>
 
   <div class="panel">
+    <div class="panel-title">Bulk Import PNRs (CSV)</div>
+    <div class="panel-body">
+    <div class="row">
+      <button class="btn secondary small" onclick="downloadBulkTemplate()">⬇ Download CSV Template</button>
+    </div>
+    <div class="field" style="margin-top:8px;width:100%">
+      <label>Paste CSV data (comma or semicolon separated)</label>
+      <textarea id="bulk-import-text" rows="7" style="width:100%;font-family:var(--mono);font-size:12px;padding:8px;border:1px solid #c7ccd4;border-radius:4px;resize:vertical;" placeholder="PNR,LEG1_FLIGHTNO,LEG2_FLIGHTNO,LEG3_FLIGHTNO,TITLE,SURNAME,GIVEN,DOB,PASSPORT,NATIONALITY,EXPIRY,CLASS
+ABC123,TK0186,,,MR,YILDIRIM,MUSTAFA,1985-05-10,L1234567,TUR,2030-01-01,economy
+ABC123,TK0186,,,MRS,YILDIRIM,AYSE,1987-03-22,L7654321,TUR,2029-06-15,economy
+XYZ789,TK0186,TK1836,,MR,SMITH,JOHN,1990-01-01,P9988776,USA,2031-12-31,business"></textarea>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn" onclick="parseBulkImportPNRs()">Import PNRs</button>
+    </div>
+    <small class="hint">Columns: PNR, up to 3 flight numbers (must already exist above — LEG2/LEG3 blank means direct/no transfer), then title, surname, given name, DOB, passport no., nationality, passport expiry, class (economy/premium/business). Multiple rows sharing the same PNR become passengers on one shared booking with the same legs. PNRs that already exist are skipped, not overwritten.</small>
+    </div>
+  </div>
+
+  <div class="panel">
     <div class="panel-title">Create PNR (single flight or transfer, up to 3 legs)</div>
     <div class="panel-body">
     <div class="row">
@@ -767,6 +791,72 @@ function renderFlights(){
 }
 
 let pnrDraft = newPnrDraft();
+function downloadBulkTemplate(){
+  const csv = "PNR,LEG1_FLIGHTNO,LEG2_FLIGHTNO,LEG3_FLIGHTNO,TITLE,SURNAME,GIVEN,DOB,PASSPORT,NATIONALITY,EXPIRY,CLASS\n"
+    + "ABC123,TK0186,,,MR,YILDIRIM,MUSTAFA,1985-05-10,L1234567,TUR,2030-01-01,economy\n"
+    + "ABC123,TK0186,,,MRS,YILDIRIM,AYSE,1987-03-22,L7654321,TUR,2029-06-15,economy\n"
+    + "XYZ789,TK0186,TK1836,,MR,SMITH,JOHN,1990-01-01,P9988776,USA,2031-12-31,business\n";
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'pnr_bulk_import_template.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function parseBulkImportPNRs(){
+  const raw = document.getElementById('bulk-import-text').value.trim();
+  if(!raw) return notify('Paste CSV data first.');
+  const lines = raw.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length===0) return notify('No data found.');
+  const delim = lines[0].includes(';') ? ';' : ',';
+  let startIdx = 0;
+  if(/^pnr$/i.test((lines[0].split(delim)[0]||'').trim())) startIdx = 1;
+
+  const grouped = {}; // pnr -> { legNos:[...], rows:[...] }
+  const errors = [];
+  for(let i=startIdx;i<lines.length;i++){
+    const cols = lines[i].split(delim).map(c=>c.trim());
+    if(cols.length<7){ errors.push(`Line ${i+1}: not enough columns`); continue; }
+    const [pnrRaw, leg1no, leg2no, leg3no, title, surname, given, dob, passport, nationality, expiry, cls] = cols;
+    if(!surname){ errors.push(`Line ${i+1}: missing surname`); continue; }
+    const pnr = (pnrRaw || genPNR()).toUpperCase();
+    if(!grouped[pnr]) grouped[pnr] = { legNos:[leg1no,leg2no,leg3no].filter(Boolean), rows:[] };
+    grouped[pnr].rows.push({
+      title:(title||'MR').toUpperCase(), surname:surname.toUpperCase(), given:(given||'GIVENNAME').toUpperCase(),
+      dob:dob||'', passport:(passport||'').toUpperCase(), nationality:(nationality||'').toUpperCase(),
+      expiry:expiry||'', cls:(cls||'economy').toLowerCase().trim()
+    });
+  }
+
+  let importedPnrCount=0, importedPaxCount=0;
+  Object.keys(grouped).forEach(pnr=>{
+    if(STATE.bookings.some(b=>b.pnr===pnr)){ errors.push(`PNR ${pnr}: already exists, skipped`); return; }
+    const group = grouped[pnr];
+    const legIds = group.legNos.map(no=>{
+      const f = STATE.flights.find(fl=>fl.flightNo.toUpperCase()===no.toUpperCase());
+      return f ? f.id : null;
+    });
+    if(legIds.length===0 || legIds.some(id=>!id)){ errors.push(`PNR ${pnr}: unknown flight number(s), skipped`); return; }
+    const legsState = {};
+    legIds.forEach(fid=>{ legsState[fid] = { seat:null, checkedIn:false, seq:null, boarded:false }; });
+    const passengers = group.rows.map(r=>({
+      key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
+      title:r.title, surname:r.surname, given:r.given, dob:r.dob,
+      passportNumber:r.passport, nationality:r.nationality, passportExpiry:r.expiry,
+      cls:['economy','premium','business'].includes(r.cls) ? r.cls : 'economy', group:'-',
+      legs: JSON.parse(JSON.stringify(legsState)), bags:0, bagWeights:[], bagTags:[]
+    }));
+    STATE.bookings.push({ pnr, legs:legIds, passengers });
+    importedPnrCount++; importedPaxCount += passengers.length;
+  });
+
+  saveState(); render();
+  let msg = `Imported ${importedPnrCount} PNR(s), ${importedPaxCount} passenger(s).`;
+  if(errors.length) msg += ` ${errors.length} issue(s): ${errors.slice(0,3).join('; ')}${errors.length>3?'…':''}`;
+  notify(msg, errors.length && importedPnrCount===0 ? 'err' : 'ok');
+}
+
 function newPnrDraft(){
   return { pnr: genPNR(), leg1:'', leg2:'', leg3:'',
     rows:[{title:'MR',surname:'',given:'',dob:'',passport:'',nationality:'',expiry:'',cls:'economy'}] };
@@ -1756,7 +1846,7 @@ function renderBagTagTab(){
         <button class="btn secondary small" onclick="printEl('bagtag-print-${i}')">Print Bag #${i+1} (${bt.weight}kg)</button>
       </div>`).join('')}
     ${tagsHtml}
-    <small class="hint">License Plate number (10 digits): 0 (interline/online) + ${AIRLINE.btic} (TK numeric carrier code) + 6-digit serial — per IATA Resolution 751/740. Bags are tagged once, through to the final destination of the itinerary; connecting airports appear on the two VIA lines. Layout is now a single continuous vertical strip (top → bottom): main barcode block, routing/VIA data, two tear-off claim stubs, and the LIMITED RELEASE mini-tag — every barcode shown is a genuine, scannable Code128 symbol (bwip-js) encoding the real license plate.</small>
+    <small class="hint">License Plate number (10 digits): 0 (interline/online) + ${AIRLINE.btic} (TK numeric carrier code) + 6-digit serial — per IATA Resolution 751/740. Bags are tagged once, through to the final destination of the itinerary. Layout: TO: (final destination) box first, then up to two VIA boxes for connections, a boxed bag sequence number, NME/PNR/bag-count-and-weight line, then a single genuine Code128 barcode (bwip-js) with reference lines below it — matching a real airline bag tag print layout.</small>
     </div>
   </div>
   `;
@@ -1766,73 +1856,74 @@ function viaBoxHTML(stopIndex, legs){
   if(stopIndex >= legs.length-1){
     return `<div class="viabox empty">VIA: —</div>`;
   }
-  const arrLeg = legs[stopIndex];
-  const nextLeg = legs[stopIndex+1];
+  const arrLeg = legs[stopIndex]; // the leg that flies INTO this via stop
   return `<div class="viabox">
-    <div class="toplab"><span>VIA:</span><span>${nextLeg.flightNo}</span></div>
-    <div class="city">${arrLeg.toCity}</div>
-    <div class="bottomrow"><span class="code">${arrLeg.to}</span><span>${fmtDate(nextLeg.date)}</span></div>
+    <div class="toplab">VIA: ${arrLeg.toCity}</div>
+    <div class="city">${arrLeg.to}</div>
+    <div class="bottomrow"><span>${AIRLINE.iata} ${arrLeg.flightNo.replace(/\D/g,'')}</span><span>${fmtDate(arrLeg.date)}</span></div>
   </div>`;
+}
+
+function destViaBlockHTML(p,legs,destFlight){
+  const viaBox1 = viaBoxHTML(0, legs);
+  const viaBox2 = viaBoxHTML(1, legs);
+  return `
+    <div class="destrow">
+      <div class="toplab">TO: ${destFlight.toCity}</div>
+      <div class="city">${destFlight.to}</div>
+      <div class="bottomrow"><span>${AIRLINE.iata} ${destFlight.flightNo.replace(/\D/g,'')}</span><span>${fmtDate(destFlight.date)}</span></div>
+    </div>
+    ${viaBox1}
+    ${viaBox2}`;
 }
 
 function bagTagHTML(p,legs,licensePlate,weight,idx){
   const originFlight = legs[0];
   const destFlight = legs[legs.length-1];
-  const routingFlightNos = legs.map(x=>x.flightNo.replace(/\D/g,'')).join('/');
-  const bagIdx = idx.toString().padStart(2,'0');
-  const bagTotal = p.bagTags.length.toString().padStart(3,'0');
+  const bagCount = p.bagTags.length.toString().padStart(2,'0'); // total number of bags this passenger checked
+  const bagWeightField = Math.round(weight).toString().padStart(3,'0'); // this specific bag's weight in kg
   const last6 = licensePlate.slice(-6);
-  const seqBox = licensePlate.slice(4,7); // small reference box, like the "506" seen on the real tag
-  const viaBox1 = viaBoxHTML(0, legs);
-  const viaBox2 = viaBoxHTML(1, legs);
+  const seqBox = String(idx).padStart(3,'0'); // per-bag sequence box, shown boldly boxed like real tags
+  const viaCity = legs.length>1 ? legs[0].toCity : '';
+  const viaCode = legs.length>1 ? legs[0].to : '';
 
   return `
   <div class="bagtag" data-lp="${licensePlate}">
-    <div class="barblock"><canvas id="bar-main-${p.key}-${idx}" data-code="${licensePlate}"></canvas></div>
-    <div class="barblock"><canvas id="bar-main2-${p.key}-${idx}" data-code="${licensePlate}"></canvas></div>
+    ${destViaBlockHTML(p,legs,destFlight)}
+
+    <div class="tagseqbox">${seqBox}</div>
 
     <div class="databox">
-      <div class="row"><span class="seqbox">${bagIdx}${bagTotal.slice(0,1)}</span><span>${classCodeLetter(p.cls)}P &nbsp; ${last6}</span></div>
-      <div class="row"><span class="seqbox">${seqBox}</span></div>
       <div class="row">NME:${p.surname}/${p.given.slice(0,3)}</div>
-      <div class="row">PNR:${p.pnr} &nbsp; ${bagIdx}/${bagTotal}</div>
-
-      <div class="destrow">
-        <div class="toplab">TO:</div>
-        <div class="city">${destFlight.toCity}</div>
-        <div class="bottomrow"><span class="code">${destFlight.to}</span><span>${fmtDate(originFlight.date)}</span></div>
-        <div class="bottomrow"><span>${AIRLINE.iata} &nbsp; ${routingFlightNos}</span><span>WT ${weight}KG</span></div>
-      </div>
-      ${viaBox1}
-      ${viaBox2}
+      <div class="row">PNR:${p.pnr} &nbsp; ${bagCount}/${bagWeightField}</div>
     </div>
 
-    <div class="stub">
-      <div class="line1">${fmtDate(originFlight.date)} &nbsp; ${AIRLINE.iata} ${routingFlightNos} ${destFlight.to} &nbsp; ${bagIdx} ${classCodeLetter(p.cls)}P ${last6}</div>
-      <canvas class="bars" id="bar-stub1-${p.key}-${idx}" data-code="${licensePlate}"></canvas>
-    </div>
-    <div class="stub">
-      <div class="line1">${fmtDate(originFlight.date)} &nbsp; ${AIRLINE.iata} ${routingFlightNos} ${destFlight.to} &nbsp; ${bagIdx} ${classCodeLetter(p.cls)}P ${last6}</div>
-      <canvas class="bars" id="bar-stub2-${p.key}-${idx}" data-code="${licensePlate}"></canvas>
+    <div class="barblock">
+      <div class="routehint">${viaCity}<br>${viaCode}</div>
+      <canvas id="bar-main-${p.key}-${idx}" data-code="${licensePlate}"></canvas>
     </div>
 
-    <div class="loopline"></div>
-    <div class="minitag">
-      <div class="toprow"><span>LIMITED RELEASE</span><span class="box"></span></div>
-      <div style="margin-top:1mm">PNR:${p.pnr} &nbsp; ${last6}</div>
-      <div>NME:${p.surname}/${p.given.slice(0,3)}</div>
-      <div>${fmtDate(originFlight.date)} &nbsp; ${bagIdx}/${bagTotal} ${originFlight.from} &nbsp; ${classCodeLetter(p.cls)}P /EO</div>
-      <div class="destbox">
-        <div class="toplab" style="font-family:Arial,sans-serif;font-size:7px;font-weight:700;color:#333">TO:</div>
-        <div class="city">${destFlight.toCity}</div>
-        <div class="sub"><span>${AIRLINE.iata} ${routingFlightNos}</span><span>${destFlight.to}</span></div>
-      </div>
-      ${viaBox1}
-      ${viaBox2}
-      <div style="display:flex;justify-content:space-between;margin-top:1mm">${seqBox} &nbsp; ${classCodeLetter(p.cls)}P &nbsp; ${licensePlate}</div>
-      <canvas class="bars" id="bar-mini-${p.key}-${idx}" data-code="${licensePlate}"></canvas>
+    <div class="databox">
+      <div class="row" style="justify-content:space-between"><span>${last6}</span><span>${classCodeLetter(p.cls)}P</span><span>${last6.slice(-4)}</span></div>
+      <div class="row" style="justify-content:space-between"><span>${classCodeLetter(p.cls)}P</span><span>${AIRLINE.iata}${destFlight.flightNo.replace(/\D/g,'').slice(-1)}</span><span>${licensePlate.slice(1,7)}</span></div>
+      <div class="row">${fmtDate(originFlight.date)} &nbsp; ${originFlight.from}</div>
     </div>
 
+    <div class="perforation"></div>
+
+    ${destViaBlockHTML(p,legs,destFlight)}
+
+    <div class="databox">
+      <div class="row">NME:${p.surname}/${p.given.slice(0,3)}</div>
+      <div class="row">${fmtDate(originFlight.date)} &nbsp; ${bagCount}/${bagWeightField} &nbsp; ${originFlight.from} &nbsp; ${p.pnr}</div>
+      <div class="row">${AIRLINE.iata}${originFlight.flightNo.replace(/\D/g,'')} &nbsp; ${destFlight.toCity} &nbsp; ${destFlight.to}</div>
+      <div class="row">${AIRLINE.iata}${destFlight.flightNo.replace(/\D/g,'')} &nbsp; ${destFlight.to}</div>
+      <div class="row">${last6.slice(0,4)} &nbsp; ${classCodeLetter(p.cls)}P &nbsp; ${last6}</div>
+    </div>
+
+    <div class="barblock">
+      <canvas id="bar-second-${p.key}-${idx}" data-code="${licensePlate}"></canvas>
+    </div>
   </div>`;
 }
 
@@ -2146,7 +2237,7 @@ function printEl(id){
   const style = document.createElement('style');
   style.id='dynamic-print-style';
   if(isPass){ style.innerHTML = `@page{ size:203mm 76mm; margin:0; }`; }
-  else if(isBagtag){ style.innerHTML = `@page{ size:52mm 340mm; margin:0; }`; }
+  else if(isBagtag){ style.innerHTML = `@page{ size:52mm 150mm; margin:0; }`; }
   else { style.innerHTML = `@page{ size:A4; margin:14mm; }`; }
   document.head.appendChild(style);
   el.classList.add('print-target');
