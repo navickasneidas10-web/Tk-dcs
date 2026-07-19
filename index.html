@@ -200,14 +200,14 @@ table tbody tr:hover{background:#eaf1fb;}
 /* stub coupon specific */
 .pass .stubtable{display:flex;flex-direction:column;gap:2mm;margin-top:1mm;}
 .pass .stubtable label{display:block;font-size:8px;font-family:'VT323',monospace;color:#555;font-weight:700;letter-spacing:.2px;}
-.pass .stubtable .val{font-size:15px;}
-.pass .stub-headrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:8px;font-family:'VT323',monospace;color:#555;font-weight:700;margin-top:3mm;border-bottom:1px solid #999;padding-bottom:1mm;}
-.pass .stub-valrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:13px;margin-top:1mm;}
+.pass .stubtable .val{font-size:22px;}
+.pass .stub-headrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:9px;font-family:'VT323',monospace;color:#555;font-weight:700;margin-top:3mm;border-bottom:1px solid #999;padding-bottom:1mm;}
+.pass .stub-valrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:19px;margin-top:1mm;}
 .pass .stub-boxes{display:flex;gap:2.5mm;margin-top:3mm;}
 .pass .stub-boxes .bf{border:1.6px solid #111;padding:1.8mm 2.5mm;text-align:center;flex:1;}
 .pass .stub-boxes .bf b{display:block;font-size:9px;font-family:'VT323',monospace;color:#333;font-weight:700;}
-.pass .stub-boxes .bf span{font-size:18px;font-weight:700;}
-.pass .stub-footline{font-size:10px;font-weight:700;margin-top:auto;padding-top:1.5mm;}
+.pass .stub-boxes .bf span{font-size:26px;font-weight:700;}
+.pass .stub-footline{font-size:14px;font-weight:700;margin-top:auto;padding-top:1.5mm;}
 .pass .stub-star{position:absolute;bottom:2.5mm;right:4mm;font-size:8px;text-align:right;font-family:'VT323',monospace;color:#777;line-height:1.3;}
 
 /* qrbox removed — single real PDF417 barcode is now the only machine-readable code */
@@ -1385,6 +1385,7 @@ function renderCheckin(){
         <select onchange="STATE.selection.pnr=this.value;STATE.selection.passengerKey=null;addPaxFormOpen=false;render()">${pnrOptions || '<option>—</option>'}</select>
       </div>
       ${booking ? `<button class="btn small danger" onclick="deletePnr('${booking.pnr}')">${pendingDeletePnr===booking.pnr?'Confirm Delete?':'Delete This PNR'}</button>${pendingDeletePnr===booking.pnr?`<button class="btn small secondary" onclick="cancelDeletePnr()">Cancel</button>`:''}` : ''}
+      <button class="btn secondary small" onclick="checkInAllForFlight()">Check-In All For Flight</button>
     </div>
     </div>
   </div>
@@ -1667,6 +1668,34 @@ function checkInPassengerLeg(pnr,key,flightId){
   saveState(); render();
 }
 
+function checkInAllForFlight(){
+  const flightId = STATE.selection.flightId;
+  const flight = STATE.flights.find(f=>f.id===flightId);
+  if(!flight) return;
+  let checkedCount=0, skippedNoSeat=0;
+  STATE.bookings.filter(b=>b.legs.includes(flightId)).forEach(b=>{
+    b.passengers.forEach(p=>{
+      if(!p.legs[flightId]) p.legs[flightId] = { seat:null, checkedIn:false, seq:null, boarded:false };
+      const ls = p.legs[flightId];
+      if(ls.checkedIn) return; // already checked in, leave as is
+      if(!ls.seat){
+        const auto = autoAssignSeat(flightId, p.cls, p.key);
+        if(!auto){ skippedNoSeat++; return; } // no seats left in that class
+        ls.seat = auto;
+      }
+      STATE.seqCounters[flightId] = (STATE.seqCounters[flightId]||0)+1;
+      ls.seq = String(STATE.seqCounters[flightId]).padStart(3,'0');
+      ls.checkedIn = true;
+      ensureThroughBagTags(b, p);
+      checkedCount++;
+    });
+  });
+  saveState(); render();
+  let msg = `Checked in ${checkedCount} passenger(s) for ${flight.flightNo}.`;
+  if(skippedNoSeat) msg += ` ${skippedNoSeat} could not be seated (class full).`;
+  notify(msg, skippedNoSeat ? 'err' : 'ok');
+}
+
 function checkInAllLegsThrough(pnr,key){
   const booking = STATE.bookings.find(b=>b.pnr===pnr);
   const pax = booking.passengers.find(p=>p.key===key);
@@ -1705,16 +1734,17 @@ function ensureThroughBagTags(booking, pax){
 ===================================================================== */
 function checkedInLegsList(){
   const list = [];
+  const activeFlightId = STATE.selection.flightId;
   STATE.bookings.forEach(b=>{
-    b.legs.forEach(flightId=>{
-      const f = STATE.flights.find(fl=>fl.id===flightId);
-      if(!f) return;
-      b.passengers.forEach(p=>{
-        const legState = p.legs[flightId];
-        if(legState && legState.checkedIn){
-          list.push({ uid: p.key+'@'+flightId, pax:p, flight:f, pnr:b.pnr, legState });
-        }
-      });
+    if(!b.legs.includes(activeFlightId)) return; // only the currently selected flight
+    const flightId = activeFlightId;
+    const f = STATE.flights.find(fl=>fl.id===flightId);
+    if(!f) return;
+    b.passengers.forEach(p=>{
+      const legState = p.legs[flightId];
+      if(legState && legState.checkedIn){
+        list.push({ uid: p.key+'@'+flightId, pax:p, flight:f, pnr:b.pnr, legState });
+      }
     });
   });
   return list;
@@ -1725,7 +1755,7 @@ function flattenPaxForLeg(pax, legState, pnr){
 
 function renderPassTab(){
   const list = checkedInLegsList();
-  if(list.length===0) return `<div class="panel"><div class="panel-body empty">No checked-in passengers yet. Check in a passenger in the Check-In tab.</div></div>`;
+  if(list.length===0) return `<div class="panel"><div class="panel-body empty">No checked-in passengers yet for this flight. Check in a passenger in the Check-In tab, or switch flights at the top.</div></div>`;
   const sel = STATE.selection.passForPass && list.find(x=>x.uid===STATE.selection.passForPass) ? STATE.selection.passForPass : list[0].uid;
   STATE.selection.passForPass = sel;
   const item = list.find(x=>x.uid===sel) || list[0];
@@ -1837,7 +1867,7 @@ function boardingPassHTML(p,f){
 function renderVerticalPDF417(canvasEl, text){
   const off = document.createElement('canvas');
   bwipjs.toCanvas(off, {
-    bcid:'pdf417', text:text, scale:3, columns:8, rowheight:10,
+    bcid:'pdf417', text:text, scale:3, columns:13, rowheight:10,
     includetext:false, backgroundcolor:'FFFFFF', paddingwidth:4, paddingheight:4
   });
   const outW = 300, outH = 640;
@@ -1866,7 +1896,9 @@ function drawBoardingPassBarcode(){
 ===================================================================== */
 function paxWithBagsList(){
   const list = [];
+  const activeFlightId = STATE.selection.flightId;
   STATE.bookings.forEach(b=>{
+    if(!b.legs.includes(activeFlightId)) return; // only the currently selected flight
     b.passengers.forEach(p=>{
       if(p.bagTags && p.bagTags.length>0){
         const legs = b.legs.map(id=>STATE.flights.find(f=>f.id===id)).filter(Boolean);
@@ -1879,7 +1911,7 @@ function paxWithBagsList(){
 
 function renderBagTagTab(){
   const list = paxWithBagsList();
-  if(list.length===0) return `<div class="panel"><div class="panel-body empty">No checked bags. Enter a bag count during Check-In before confirming.</div></div>`;
+  if(list.length===0) return `<div class="panel"><div class="panel-body empty">No checked bags for this flight. Enter a bag count during Check-In before confirming, or switch flights at the top.</div></div>`;
   const sel = STATE.selection.passForTag && list.find(x=>x.pax.key===STATE.selection.passForTag) ? STATE.selection.passForTag : list[0].pax.key;
   STATE.selection.passForTag = sel;
   const item = list.find(x=>x.pax.key===sel) || list[0];
@@ -2006,7 +2038,7 @@ function drawBagTagBarcodes(){
     try{
       bwipjs.toCanvas(el, {
         bcid:'code128', text:code, scale:2,
-        height: el.id.startsWith('bar-main')?11:el.id.startsWith('bar-mini')?7:8,
+        height: el.id.startsWith('bar-main') ? 70 : 8, // bar-main stays attached to the bag — much bigger; bar-second is the tear-off claim stub
         includetext:false, backgroundcolor:'FFFFFF', paddingwidth:2, paddingheight:1
       });
     }catch(e){ console.error('Code128 render failed', e); }
