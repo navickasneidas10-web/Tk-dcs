@@ -158,8 +158,8 @@ table tbody tr:hover{background:#eaf1fb;}
   font-family:'VT323','Share Tech Mono',monospace;
 }
 .pass .coupon{display:flex;flex-direction:column;position:relative;height:100%;}
-.pass .coupon.main{width:73%;border-right:2px dashed #999;}
-.pass .coupon.stub{width:27%;}
+.pass .coupon.main{width:75%;border-right:2px dashed #999;}
+.pass .coupon.stub{width:25%;}
 .pass .redhead{
   background:#c8102e;color:#fff;display:flex;align-items:center;gap:6px;padding:1.8mm 4mm;
   font-family:Arial,Helvetica,sans-serif;flex-shrink:0;
@@ -174,41 +174,41 @@ table tbody tr:hover{background:#eaf1fb;}
 
 .pass .body{flex:1;display:flex;position:relative;overflow:hidden;}
 .pass .barcode-col{
-  width:24mm;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:2mm 0;border-right:1px solid #ccc;overflow:hidden;
+  width:32mm;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:2mm 0;border-right:1px solid #ccc;overflow:hidden;
 }
-.pass .barcode-col canvas{width:21mm;height:96%;display:block;}
+.pass .barcode-col canvas{width:28mm;height:96%;display:block;}
 .pass .content{flex:1;padding:1.5mm 4mm;display:flex;flex-direction:column;gap:0.5mm;position:relative;}
 
 .pass .stampband{
   position:absolute;top:1mm;right:6mm;font-family:'VT323',monospace;font-weight:700;font-size:21px;letter-spacing:2.5px;
   color:#111;opacity:.85;transform:rotate(-2deg);z-index:3;
 }
-.pass .toprow{display:flex;justify-content:space-between;align-items:baseline;font-size:22px;margin-top:2mm;}
-.pass .toprow .fqtv{font-size:18px;text-align:right;}
-.pass .flightline{display:flex;gap:3mm;font-size:21px;margin-top:0.5mm;flex-wrap:wrap;align-items:baseline;}
+.pass .toprow{display:flex;justify-content:space-between;align-items:baseline;font-size:18px;margin-top:2mm;}
+.pass .toprow .fqtv{font-size:14px;text-align:right;}
+.pass .flightline{display:flex;gap:3mm;font-size:18px;margin-top:0.5mm;flex-wrap:wrap;align-items:baseline;}
 
 .pass .bigfields{display:flex;gap:2.5mm;margin-top:1.5mm;}
 .pass .bigfields .bf{border:1.4px solid #111;padding:1mm 2.5mm;text-align:center;flex:1;}
-.pass .bigfields .bf b{display:block;font-size:10px;font-family:'VT323',monospace;color:#333;font-weight:700;letter-spacing:.2px;}
-.pass .bigfields .bf span{font-size:40px;font-weight:700;font-family:'VT323',monospace;line-height:1.1;}
+.pass .bigfields .bf b{display:block;font-size:8px;font-family:'VT323',monospace;color:#333;font-weight:700;letter-spacing:.2px;}
+.pass .bigfields .bf span{font-size:32px;font-weight:700;font-family:'VT323',monospace;line-height:1.1;}
 
-.pass .destcity{font-family:'VT323',monospace;font-weight:800;font-size:38px;margin-top:1mm;letter-spacing:.3px;line-height:1;text-align:center;}
-.pass .ticketline{font-size:17px;font-weight:700;margin-top:auto;padding-top:1mm;}
-.pass .secline{font-size:14px;color:#222;}
-.pass .microtext{font-size:9px;color:#333;font-family:'VT323',monospace;margin-top:0.8mm;line-height:1.25;}
+.pass .destcity{font-family:'VT323',monospace;font-weight:800;font-size:32px;margin-top:1mm;letter-spacing:.3px;line-height:1;text-align:center;}
+.pass .ticketline{font-size:15px;font-weight:700;margin-top:auto;padding-top:1mm;}
+.pass .secline{font-size:12px;color:#222;}
+.pass .microtext{font-size:8.5px;color:#333;font-family:'VT323',monospace;margin-top:0.8mm;line-height:1.2;}
 
 /* stub coupon specific */
-.pass .stubtable{display:flex;flex-direction:column;gap:2mm;margin-top:1mm;}
-.pass .stubtable label{display:block;font-size:8px;font-family:'VT323',monospace;color:#555;font-weight:700;letter-spacing:.2px;}
-.pass .stubtable .val{font-size:22px;}
-.pass .stub-headrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:9px;font-family:'VT323',monospace;color:#555;font-weight:700;margin-top:3mm;border-bottom:1px solid #999;padding-bottom:1mm;}
-.pass .stub-valrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:19px;margin-top:1mm;}
-.pass .stub-boxes{display:flex;gap:2.5mm;margin-top:3mm;}
-.pass .stub-boxes .bf{border:1.6px solid #111;padding:1.8mm 2.5mm;text-align:center;flex:1;}
-.pass .stub-boxes .bf b{display:block;font-size:9px;font-family:'VT323',monospace;color:#333;font-weight:700;}
-.pass .stub-boxes .bf span{font-size:26px;font-weight:700;}
-.pass .stub-footline{font-size:14px;font-weight:700;margin-top:auto;padding-top:1.5mm;}
-.pass .stub-star{position:absolute;bottom:2.5mm;right:4mm;font-size:8px;text-align:right;font-family:'VT323',monospace;color:#777;line-height:1.3;}
+.pass .stubtable{display:flex;flex-direction:column;gap:1.5mm;margin-top:1mm;}
+.pass .stubtable label{display:block;font-size:7px;font-family:'VT323',monospace;color:#555;font-weight:700;letter-spacing:.2px;}
+.pass .stubtable .val{font-size:16px;}
+.pass .stub-headrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:8px;font-family:'VT323',monospace;color:#555;font-weight:700;margin-top:2mm;border-bottom:1px solid #999;padding-bottom:1mm;}
+.pass .stub-valrow{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:2mm;font-size:14px;margin-top:1mm;}
+.pass .stub-boxes{display:flex;gap:2mm;margin-top:2mm;}
+.pass .stub-boxes .bf{border:1.4px solid #111;padding:1.2mm 2mm;text-align:center;flex:1;}
+.pass .stub-boxes .bf b{display:block;font-size:7px;font-family:'VT323',monospace;color:#333;font-weight:700;}
+.pass .stub-boxes .bf span{font-size:19px;font-weight:700;}
+.pass .stub-footline{font-size:11px;font-weight:700;margin-top:auto;padding-top:1mm;}
+.pass .stub-star{position:absolute;bottom:2mm;right:4mm;font-size:7px;text-align:right;font-family:'VT323',monospace;color:#777;line-height:1.3;}
 
 /* qrbox removed — single real PDF417 barcode is now the only machine-readable code */
 
@@ -1781,7 +1781,7 @@ function renderPassTab(){
     <div id="bpass-print" class="print-target">
       ${boardingPassHTML(p,f)}
     </div>
-    <small class="hint">Layout replicates a Turkish Airlines ATB stock boarding pass (main coupon + agent stub), size 203mm × 76mm (official IATA ATB boarding-pass dimensions). The tall barcode on the left is a genuine, standards-compliant PDF417 symbol (generated with bwip-js) carrying the same BCBP-style data — it is a real decodable barcode, not a visual placeholder, and the Boarding Gate tab reads it back with an actual PDF417 decoder (ZXing), not a QR-code workaround.</small>
+    <small class="hint">Layout replicates a Turkish Airlines ATB stock boarding pass (main coupon + agent stub), size 203mm × 76mm (official IATA ATB dimensions). The tall barcode on the left is a genuine, standards-compliant PDF417 symbol (generated with bwip-js) carrying the same BCBP-style data — it is a real decodable barcode, not a visual placeholder, and the Boarding Gate tab reads it back with an actual PDF417 decoder (ZXing), not a QR-code workaround. Printing auto-scales this to fill an A4 sheet in whichever orientation fits best.</small>
     </div>
   </div>
   `;
@@ -1867,7 +1867,7 @@ function boardingPassHTML(p,f){
 function renderVerticalPDF417(canvasEl, text){
   const off = document.createElement('canvas');
   bwipjs.toCanvas(off, {
-    bcid:'pdf417', text:text, scale:3, columns:13, rowheight:10,
+    bcid:'pdf417', text:text, scale:3, columns:8, rowheight:3,
     includetext:false, backgroundcolor:'FFFFFF', paddingwidth:4, paddingheight:4
   });
   const outW = 300, outH = 640;
@@ -2331,10 +2331,38 @@ function printEl(id){
   const isPass = el.querySelector('.pass');
   const isBagtag = el.querySelector('.bagtag');
   const style = document.createElement('style');
-  style.id='dynamic-print-style';
-  if(isPass){ style.innerHTML = `@page{ size:203mm 76mm; margin:0; }`; }
-  else if(isBagtag){ style.innerHTML = `@page{ size:52mm 150mm; margin:0; }`; }
-  else { style.innerHTML = `@page{ size:A4; margin:14mm; }`; }
+  style.id = 'dynamic-print-style';
+
+  if(isPass || isBagtag){
+    // Single fixed-size document (boarding pass / bag tag): measure its real
+    // rendered size and scale it up to fill as much of one A4 sheet as
+    // possible — in whichever orientation fits best — so it never spills
+    // onto a second page and never prints tiny.
+    const rect = el.getBoundingClientRect();
+    const pxToMm = 25.4/96;
+    const contentWmm = rect.width * pxToMm;
+    const contentHmm = rect.height * pxToMm;
+
+    const margin = 8; // mm, on each side
+    const portraitAvailW = 210 - margin*2, portraitAvailH = 297 - margin*2;
+    const landscapeAvailW = 297 - margin*2, landscapeAvailH = 210 - margin*2;
+
+    const scalePortrait = Math.min(portraitAvailW/contentWmm, portraitAvailH/contentHmm);
+    const scaleLandscape = Math.min(landscapeAvailW/contentWmm, landscapeAvailH/contentHmm);
+    const useLandscape = scaleLandscape > scalePortrait;
+    const scale = (useLandscape ? scaleLandscape : scalePortrait) * 0.98; // tiny safety margin
+
+    style.innerHTML = `
+      @page{ size:A4 ${useLandscape?'landscape':'portrait'}; margin:${margin}mm; }
+      #${id}.print-target{ transform:scale(${scale}); transform-origin:top left; }
+    `;
+  }else{
+    // Variable-length content (e.g. the passenger manifest table): print it
+    // plainly, letting it flow across as many A4 pages as it naturally needs —
+    // no forced single-page shrink here.
+    style.innerHTML = `@page{ size:A4; margin:14mm; }`;
+  }
+
   document.head.appendChild(style);
   el.classList.add('print-target');
   window.print();
