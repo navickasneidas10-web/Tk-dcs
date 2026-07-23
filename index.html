@@ -212,6 +212,127 @@ table tbody tr:hover{background:#eaf1fb;}
 
 /* qrbox removed — single real PDF417 barcode is now the only machine-readable code */
 
+/* ===== Style modifiers for the alternate airlines (reuse the exact same
+   203mm x 76mm .pass shell/sizing as Turkish — only colors/text differ) ===== */
+.redhead.rh-celebi{background:linear-gradient(90deg,#00A19C,#00699E);}
+
+/* Çelebi exact layout: blue labels (normal font) above black values (pixelated font) */
+.cel-label{font-family:Arial,Helvetica,sans-serif;color:#00699E;font-size:7px;font-weight:700;letter-spacing:.2px;line-height:1.3;}
+.cel-value{font-family:'VT323',monospace;color:#111;font-size:19px;line-height:1.05;}
+.pass .content.cel-content{padding-top:2.5mm;}
+.cel-row{margin-top:1.5mm;}
+.cel-row2{display:flex;gap:6mm;margin-top:2mm;}
+.cel-row2>div{flex:1;}
+.cel-grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border:1px solid #00A19C;margin-top:2.5mm;}
+.cel-grid4>div{padding:1mm 2mm;border-right:1px solid #00A19C;}
+.cel-grid4>div:last-child{border-right:none;}
+.cel-bottomrow{display:flex;gap:5mm;margin-top:3mm;align-items:center;}
+.cel-barcode-inline{flex:1;display:flex;align-items:center;justify-content:flex-start;height:22mm;overflow:hidden;}
+.cel-barcode-inline canvas{max-width:100%;max-height:100%;}
+.cel-sidelist{display:flex;flex-direction:column;gap:1.5mm;width:34mm;flex-shrink:0;}
+.cel-sidelist>div{display:flex;justify-content:space-between;align-items:baseline;gap:2mm;border-bottom:1px solid #cde;padding-bottom:0.8mm;}
+.cel-sidelist .cel-value{font-size:17px;}
+.cel-microtext{font-family:Arial,Helvetica,sans-serif;color:#00699E;font-size:7px;text-align:center;margin-top:2.5mm;}
+.cel-stub-narrow .cel-label{font-size:6.5px;}
+.cel-stub-narrow .cel-value{font-size:14px;}
+.cel-stub-narrow .cel-row2{gap:3mm;}
+.redhead.rh-aeroflot{background:#003876;}
+
+/* ===== AEROFLOT — built from scratch, matching the real ticket field-for-field
+   (not reusing the Turkish shell's internal classes; only .pass/.coupon are
+   shared, purely for the official 203x76mm envelope size). ===== */
+.af2-wrap{
+  width:100%;height:100%;box-sizing:border-box;padding:2.5mm 4mm;display:flex;flex-direction:column;
+  font-family:'VT323',monospace;color:#111;position:relative;overflow:hidden;
+}
+.af2-topline{display:flex;justify-content:space-between;align-items:flex-start;}
+.af2-title{font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:12px;color:#003876;line-height:1.35;}
+.af2-issuedby{text-align:right;}
+.af2-issuedby-label{font-family:Arial,Helvetica,sans-serif;font-size:6px;color:#555;letter-spacing:.2px;}
+.af2-logo{font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:17px;color:#003876;margin-top:0.5mm;}
+.af2-logo small{display:block;font-weight:400;font-style:italic;font-size:6.5px;color:#888;}
+.af2-sky{font-family:Arial,Helvetica,sans-serif;font-size:6px;color:#555;margin-top:0.5mm;}
+
+.af2-field{margin-top:1.6mm;}
+.af2-field label{font-family:Arial,Helvetica,sans-serif;font-size:8px;color:#003876;font-weight:700;display:block;letter-spacing:.2px;}
+.af2-field span{font-size:19px;line-height:1.05;}
+
+.af2-row2{display:flex;gap:6mm;margin-top:1.6mm;}
+.af2-row2>div{flex:1;}
+
+.af2-issagt{margin-top:1.6mm;}
+.af2-issagt label{font-family:Arial,Helvetica,sans-serif;font-size:6.5px;color:#003876;font-weight:700;display:block;}
+.af2-issagt span{font-size:20px;font-weight:700;}
+
+.af2-row3{display:flex;gap:4mm;margin-top:1.8mm;}
+.af2-row3>div{flex:1;min-width:0;}
+.af2-row3 label{font-family:Arial,Helvetica,sans-serif;font-size:7px;color:#003876;font-weight:700;display:block;}
+.af2-row3 span{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;}
+
+.af2-bottomrow{display:flex;gap:4mm;margin-top:2.5mm;align-items:center;}
+.af2-barcode{flex:1;height:14mm;display:flex;align-items:center;overflow:hidden;}
+.af2-barcode canvas{max-width:100%;max-height:100%;}
+.af2-bigfields{display:flex;gap:2mm;flex-shrink:0;}
+.af2-bf{border:1.2px solid #003876;padding:0.8mm 2mm;text-align:center;}
+.af2-bf label{font-family:Arial,Helvetica,sans-serif;font-size:7px;color:#003876;display:block;}
+.af2-bf span{font-size:21px;font-weight:700;}
+
+.af2-refs2{display:flex;justify-content:space-between;gap:2mm;font-family:Arial,Helvetica,sans-serif;font-size:8px;color:#333;margin-top:2mm;}
+.af2-codeshare{font-family:'VT323',monospace;font-size:16px;color:#111;margin-top:1.5mm;}
+.af2-footer{font-family:Arial,Helvetica,sans-serif;font-size:8px;color:#003876;text-align:center;margin-top:2mm;line-height:1.35;}
+.af2-bottomcode{font-size:13px;font-weight:700;margin-top:auto;padding-top:1mm;}
+
+.af2-stub-wrap .af2-field span,.af2-stub-wrap .af2-row3 span{font-size:12px;}
+.af2-stub-wrap .af2-row3{gap:2.5mm;}
+
+/* Aeroflot exact layout: bilingual EN/RU label above value, horizontal (not rotated) barcode inline with big fields */
+.pass .content.af-content{padding-top:2.5mm;}
+.af-row{margin-top:1.5mm;}
+.af-row label,.af-row2 label,.af-row3 label{font-family:Arial,Helvetica,sans-serif;color:#003876;font-size:7px;font-weight:700;display:block;line-height:1.3;}
+.af-row span,.af-row2 span,.af-row3 span{font-family:'VT323',monospace;color:#111;font-size:18px;line-height:1.05;}
+.af-row2{display:flex;gap:6mm;margin-top:2mm;}
+.af-row2>div{flex:1;}
+.af-row3{display:flex;gap:5mm;margin-top:2mm;}
+.af-row3>div{flex:1;}
+.af-bottomrow{display:flex;gap:5mm;margin-top:2.5mm;align-items:center;}
+.af-barcode-inline{flex:1;display:flex;align-items:center;justify-content:flex-start;height:15mm;overflow:hidden;}
+.af-barcode-inline canvas{max-width:100%;max-height:100%;}
+.af-big{display:flex;gap:2.5mm;flex-shrink:0;}
+.af-bf{border:1.4px solid #003876;padding:1mm 2mm;text-align:center;}
+.af-bf b{display:block;font-family:Arial,sans-serif;font-size:6.5px;color:#003876;}
+.af-bf span{font-family:'VT323',monospace;font-size:20px;font-weight:700;color:#111;}
+.af-refs{display:flex;justify-content:space-between;gap:2mm;flex-wrap:wrap;font-family:Arial,sans-serif;font-size:8px;color:#333;margin-top:2mm;}
+.af-footer{font-family:Arial,sans-serif;font-size:7px;color:#003876;text-align:center;margin-top:2mm;line-height:1.4;}
+.af-stub-content .af-row2,.af-stub-content .af-row3{gap:3mm;}
+.af-stub-content .af-row label,.af-stub-content .af-row2 label,.af-stub-content .af-row3 label{font-size:6px;}
+.af-stub-content .af-row span,.af-stub-content .af-row2 span,.af-stub-content .af-row3 span{font-size:14px;}
+.redhead.rh-charter{background:#eee;color:#111;border-bottom:2px solid #111;}
+.redhead.rh-charter .bp-label,.redhead.rh-charter .brand,.redhead.rh-charter .star{color:#111;}
+.redhead.rh-charter .divider{background:rgba(0,0,0,.3);}
+
+/* Charter exact layout: label:value rows in two columns (plain, no branding) */
+.pass .content.ch-content{position:relative;padding-top:3mm;}
+.ch-cols{display:flex;gap:8mm;margin-top:4mm;}
+.ch-left{flex:1.3;min-width:0;display:flex;flex-direction:column;gap:3.1mm;}
+.ch-lrow{display:flex;gap:2mm;font-size:14px;align-items:baseline;}
+.ch-lrow label{width:27mm;flex-shrink:0;}
+.ch-lrow span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ch-right{display:flex;flex-direction:column;gap:2.8mm;padding-top:1mm;}
+.ch-rrow{display:flex;gap:3mm;align-items:baseline;font-size:14px;}
+.ch-rrow.ch-rrow-pnr span{font-size:18px;font-weight:700;}
+.ch-rrow label{width:26mm;flex-shrink:0;}
+.ch-rrow span{font-size:32px;font-weight:700;}
+.ch-stub-grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm;font-size:13px;}
+.ch-stub-val3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm;font-size:19px;}
+.ch-stub-block .ch-stub-val3{margin-top:1mm;}
+.ch-stub-seat{font-size:32px;font-weight:800;text-align:center;}
+.ch-stub-narrow .ch-lrow{font-size:15px;gap:2mm;}
+.ch-stub-narrow .ch-lrow label{width:20mm;}
+.ch-stub-narrow{display:flex;flex-direction:column;gap:1.5mm;}
+.ch-stacked{display:flex;flex-direction:column;}
+.ch-stacked label{font-size:11px;color:#111;}
+.ch-stacked span{font-size:16px;}
+
 /* ===== BAG TAG — vertical strip, top-to-bottom, replica of real TK/handling-agent tag ===== */
 .bagtag-wrap{overflow-x:auto;padding:14px;background:#f7f9fb;border:1px solid var(--border);border-radius:3px;display:flex;justify-content:center;}
 .bagtag{
@@ -357,6 +478,16 @@ const sbClient = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase)
   : null;
 
 const AIRLINE = { name:"TURKISH AIRLINES", iata:"TK", btic:"235" };
+const STYLE_DEFAULT_AIRLINE_NAME = {
+  turkish:"TURKISH AIRLINES", aeroflot:"AEROFLOT", charter:"CHARTER AIRLINES", celebi:"ÇELEBİ GROUND HANDLING"
+};
+function airlineNameFor(f){ return (f && f.airlineName) || STYLE_DEFAULT_AIRLINE_NAME[f?f.bpStyle:'turkish'] || AIRLINE.name; }
+function operatingAirlineFor(f){ return (f && f.operatingAirline) || airlineNameFor(f); }
+function onBpStyleChange(style){
+  const airlineInput = document.getElementById('nf-airline');
+  if(airlineInput && !airlineInput.value.trim()){ airlineInput.placeholder = STYLE_DEFAULT_AIRLINE_NAME[style] || 'TURKISH AIRLINES'; }
+}
+
 const BIRD_SVG = `<svg viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
   <path fill="currentColor" d="M60 8 C61 22, 61 30, 60 40 L60 8 Z"/>
   <path fill="currentColor" d="M60 24 C50 10, 28 4, 4 20 C24 20, 40 26, 52 40 C38 38, 20 40, 2 52 C26 48, 44 50, 56 62 L60 68 L64 62 C76 50, 94 48, 118 52 C100 40, 82 38, 68 40 C80 26, 96 20, 116 20 C92 4, 70 10, 60 24 Z"/>
@@ -399,6 +530,17 @@ function normalizeAcClass(clsDef){
 }
 function classRowDefs(ac, cls){
   return normalizeAcClass(ac.classes[cls]).slice().sort((a,b)=>a.row-b.row);
+}
+
+function classSeatCapacity(ac, cls){
+  return classRowDefs(ac, cls).reduce((sum,rd)=>sum+rd.groups.reduce((s,g)=>s+g.length,0), 0);
+}
+function classBookedCount(flightId, cls, excludePnr){
+  return STATE.bookings.reduce((count,b)=>{
+    if(excludePnr && b.pnr===excludePnr) return count;
+    if(!b.legs.includes(flightId)) return count;
+    return count + b.passengers.filter(p=>p.cls===cls).length;
+  }, 0);
 }
 
 /* All seat letters used anywhere on this aircraft, in canonical left-to-right
@@ -456,6 +598,7 @@ let STATE = {
   aircraftRegistry: [],
   seqCounters: {},
   bagCounters: {},
+  eTicketCounter: 0,
   selection: { flightId:null, pnr:null, passengerKey:null, seatLegId:null }
 };
 
@@ -491,7 +634,15 @@ async function loadState(){
 
   if(!STATE.aircraftRegistry) STATE.aircraftRegistry = [];
   if(!STATE.__rev) STATE.__rev = 0;
+  if(!STATE.eTicketCounter) STATE.eTicketCounter = 0;
   if(STATE.flights.length===0) seedDemoData();
+  // migration: assign an e-ticket number to any passenger created before this feature existed
+  STATE.flights.forEach(f=>{ if(f.archived===undefined) f.archived=false; if(!f.bpStyle) f.bpStyle='turkish'; if(f.airlineName===undefined) f.airlineName=''; if(f.operatingAirline===undefined) f.operatingAirline=''; if(f.terminal===undefined) f.terminal=''; if(!f.bagAllowance) f.bagAllowance={economy:20,premium:25,business:30}; });
+  let migrated = false;
+  STATE.bookings.forEach(b=>{
+    b.passengers.forEach(p=>{ if(!p.eTicket){ p.eTicket = genETicket(); migrated = true; } });
+  });
+  if(migrated) saveState();
   render();
 }
 
@@ -620,15 +771,16 @@ function render(){
 
 function renderFlightBanner(){
   const el = document.getElementById('flightbanner');
-  const flight = STATE.flights.find(f=>f.id===STATE.selection.flightId) || STATE.flights[0];
+  const flight = STATE.flights.find(f=>f.id===STATE.selection.flightId) || STATE.flights.find(f=>!f.archived) || STATE.flights[0];
   if(!flight){ el.innerHTML = `<span style="color:#9fb8d6">NO ACTIVE FLIGHT</span>`; return; }
   const bookingsForFlight = STATE.bookings.filter(b=>b.legs.includes(flight.id));
   const paxAll = bookingsForFlight.reduce((s,b)=>s+b.passengers.length,0);
   const ci = bookingsForFlight.reduce((s,b)=>s+b.passengers.filter(p=>p.legs[flight.id]?.checkedIn).length,0);
   const boarded = bookingsForFlight.reduce((s,b)=>s+b.passengers.filter(p=>p.legs[flight.id]?.boarded).length,0);
+  const dropdownFlights = STATE.flights.filter(f=>!f.archived || f.id===flight.id);
   el.innerHTML = `
     <select onchange="STATE.selection.flightId=this.value;STATE.selection.pnr=null;STATE.selection.passengerKey=null;render()">
-      ${STATE.flights.map(f=>`<option value="${f.id}" ${f.id===flight.id?'selected':''}>${f.flightNo} ${f.from}-${f.to}</option>`).join('')}
+      ${dropdownFlights.map(f=>`<option value="${f.id}" ${f.id===flight.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})${f.archived?' [ARCHIVED]':''}</option>`).join('')}
     </select>
     <div class="fb-item"><label>Route</label><span>${flight.from} → ${flight.to}</span></div>
     <div class="fb-item"><label>Date</label><span>${flight.date}</span></div>
@@ -654,16 +806,38 @@ function afterRenderHooks(){
    TAB: FLIGHT SETUP
 ===================================================================== */
 function renderFlights(){
-  const rows = STATE.flights.map(f=>{
+  const todayISO = new Date().toISOString().slice(0,10);
+  const activeFlights = STATE.flights.filter(f=>!f.archived);
+  const archivedFlights = STATE.flights.filter(f=>f.archived);
+  const pastCount = activeFlights.filter(f=>f.date<todayISO).length;
+  const bookableFlights = STATE.flights.filter(f=>!f.archived && f.date>=todayISO); // no PNR creation on past/archived flights
+
+  const rows = activeFlights.map(f=>{
     const cnt = STATE.bookings.filter(b=>b.legs.includes(f.id)).reduce((s,b)=>s+b.passengers.length,0);
-    return `<tr>
-      <td><b>${f.flightNo}</b></td><td>${f.date}</td>
+    return `<tr ${f.date<todayISO?'style="color:#9a5a10"':''}>
+      <td><b>${f.flightNo}</b>${f.date<todayISO?' <span class="badge pending" style="font-size:9px">PAST</span>':''}</td><td>${f.date}</td>
       <td>${f.from} → ${f.to}</td><td>${f.aircraft} <span style="color:#5a6b7d">(${f.tailNumber})</span></td>
       <td>${f.gate}</td><td>${f.boarding}</td><td>${f.std}</td>
       <td>${cnt} PAX</td>
       <td style="white-space:nowrap">
         <button class="btn small secondary" onclick="STATE.selection.flightId='${f.id}';setTab('checkin')">Check-In →</button>
         <button class="btn small secondary" onclick="startEditFlight('${f.id}')">Edit</button>
+        <button class="btn small secondary" onclick="archiveFlight('${f.id}')">Archive</button>
+        <button class="btn small danger" onclick="deleteFlight('${f.id}')">${pendingDeleteFlightId===f.id?'Confirm Delete?':'Delete'}</button>
+        ${pendingDeleteFlightId===f.id?`<button class="btn small secondary" onclick="cancelDeleteFlight()">Cancel</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  const archivedRows = archivedFlights.map(f=>{
+    const cnt = STATE.bookings.filter(b=>b.legs.includes(f.id)).reduce((s,b)=>s+b.passengers.length,0);
+    return `<tr style="opacity:.65">
+      <td><b>${f.flightNo}</b></td><td>${f.date}</td>
+      <td>${f.from} → ${f.to}</td><td>${f.aircraft} <span style="color:#5a6b7d">(${f.tailNumber})</span></td>
+      <td>${cnt} PAX</td>
+      <td style="white-space:nowrap">
+        <button class="btn small secondary" onclick="STATE.selection.flightId='${f.id}';setTab('manifest')">View Manifest</button>
+        <button class="btn small secondary" onclick="unarchiveFlight('${f.id}')">Unarchive</button>
         <button class="btn small danger" onclick="deleteFlight('${f.id}')">${pendingDeleteFlightId===f.id?'Confirm Delete?':'Delete'}</button>
         ${pendingDeleteFlightId===f.id?`<button class="btn small secondary" onclick="cancelDeleteFlight()">Cancel</button>`:''}
       </td>
@@ -675,14 +849,27 @@ function renderFlights(){
 
   return `
   <div class="panel">
-    <div class="panel-title">Flight List</div>
+    <div class="panel-title">Flight List<span style="float:right;font-weight:400;text-transform:none;">${archivedFlights.length>0 ? `<button class="btn secondary small" onclick="showArchived=true;render()">📁 View Archive (${archivedFlights.length})</button>` : ''}</span></div>
     <div class="panel-body">
+    ${pastCount>0 ? `<div class="row" style="margin-bottom:10px"><button class="btn secondary small" onclick="archiveAllPastFlights()">Archive All ${pastCount} Past Flight(s)</button><small class="hint" style="margin:0">Flights with a date before today (${todayISO}) are highlighted below.</small></div>` : ''}
     <table>
       <thead><tr><th>Flight</th><th>Date</th><th>Route</th><th>Aircraft (Reg.)</th><th>Gate</th><th>Boarding</th><th>STD</th><th>PAX</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="9" class="empty">No flights created yet</td></tr>'}</tbody>
     </table>
     </div>
   </div>
+
+  ${showArchived ? `
+  <div class="panel">
+    <div class="panel-title">Archived Flights (${archivedFlights.length})<span style="float:right;font-weight:400;text-transform:none;"><button class="btn secondary small" onclick="showArchived=false;render()">✕ Hide Archive</button></span></div>
+    <div class="panel-body">
+    <table>
+      <thead><tr><th>Flight</th><th>Date</th><th>Route</th><th>Aircraft (Reg.)</th><th>PAX</th><th></th></tr></thead>
+      <tbody>${archivedRows || '<tr><td colspan="6" class="empty">No archived flights</td></tr>'}</tbody>
+    </table>
+    </div>
+  </div>
+  ` : ''}
 
   <div class="panel">
     <div class="panel-title">${ef ? 'Edit Flight — '+ef.flightNo : 'Create Flight'}</div>
@@ -701,12 +888,27 @@ function renderFlights(){
       <div class="field"><label>Gate</label><input id="nf-gate" placeholder="D22" value="${ef&&ef.gate!=='-'?ef.gate:''}"></div>
       <div class="field"><label>Boarding</label><input id="nf-board" type="time" value="${ef&&ef.boarding!=='--:--'?ef.boarding:''}"></div>
       <div class="field"><label>STD</label><input id="nf-std" type="time" value="${ef&&ef.std!=='--:--'?ef.std:''}"></div>
+      <div class="field"><label>Boarding Pass Style</label>
+        <select id="nf-bpstyle" onchange="onBpStyleChange(this.value)">
+          <option value="turkish" ${(!ef||ef.bpStyle==='turkish')?'selected':''}>Turkish Airlines (ATB)</option>
+          <option value="aeroflot" ${ef&&ef.bpStyle==='aeroflot'?'selected':''}>Aeroflot</option>
+          <option value="charter" ${ef&&ef.bpStyle==='charter'?'selected':''}>Charter (generic thermal)</option>
+          <option value="celebi" ${ef&&ef.bpStyle==='celebi'?'selected':''}>Çelebi Ground Handling</option>
+        </select>
+      </div>
+      <div class="field"><label>Airline Name (shown on manifest/documents)</label><input id="nf-airline" placeholder="TURKISH AIRLINES" value="${ef?(ef.airlineName||''):''}"></div>
+      <div class="field"><label>Operated By (codeshare, optional)</label><input id="nf-operatedby" placeholder="Leave blank if not a codeshare" value="${ef?(ef.operatingAirline||''):''}"></div>
+      <div class="field"><label>Terminal</label><input id="nf-terminal" placeholder="1" value="${ef?(ef.terminal||''):''}"></div>
+      <div class="field"><label>Free Bag Allowance — Economy (kg)</label><input id="nf-bag-eco" type="number" min="0" placeholder="20" value="${ef&&ef.bagAllowance?ef.bagAllowance.economy:''}" style="width:80px"></div>
+      <div class="field"><label>Free Bag Allowance — Premium (kg)</label><input id="nf-bag-prem" type="number" min="0" placeholder="25" value="${ef&&ef.bagAllowance?ef.bagAllowance.premium:''}" style="width:80px"></div>
+      <div class="field"><label>Free Bag Allowance — Business (kg)</label><input id="nf-bag-biz" type="number" min="0" placeholder="30" value="${ef&&ef.bagAllowance?ef.bagAllowance.business:''}" style="width:80px"></div>
       ${ef
         ? `<button class="btn" onclick="saveFlightEdit()">Save Changes</button><button class="btn secondary" onclick="cancelEditFlight()">Cancel</button>`
         : `<button class="btn" ${STATE.aircraftRegistry.length?'':'disabled'} onclick="addFlight()">+ Add Flight</button>`}
     </div>
     ${STATE.aircraftRegistry.length? '' : '<small class="hint">Register an aircraft first in the Aircraft Registry tab (F2) before creating a flight.</small>'}
     ${!ef ? '<small class="hint">Leave "Repeat Daily Until" blank for a single flight on one date. Fill it in to create the same flight number/route/aircraft/times as a separate flight entry for every day from Date through that end date (e.g. a daily service running all week).</small>' : ''}
+    <small class="hint">Leave a bag allowance field blank to use the default (20/25/30 kg). Regardless of allowance, a single bag over 32kg cannot be checked in at all — this is a hard IATA handling limit, not a fee threshold.</small>
     </div>
   </div>
 
@@ -739,23 +941,23 @@ ${bulkTemplateRows().trim()}"></textarea>
       <div class="field"><label>Flight Leg 1</label>
         <select onchange="setDraftLeg(1,this.value)">
           <option value="">— select —</option>
-          ${STATE.flights.map(f=>`<option value="${f.id}" ${pnrDraft.leg1===f.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})</option>`).join('')}
+          ${bookableFlights.map(f=>`<option value="${f.id}" ${pnrDraft.leg1===f.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})</option>`).join('')}
         </select>
       </div>
       <div class="field"><label>Flight Leg 2 (transfer)</label>
         <select onchange="setDraftLeg(2,this.value)" ${pnrDraft.leg1?'':'disabled'}>
           <option value="">— none (direct) —</option>
-          ${STATE.flights.map(f=>`<option value="${f.id}" ${pnrDraft.leg2===f.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})</option>`).join('')}
+          ${bookableFlights.map(f=>`<option value="${f.id}" ${pnrDraft.leg2===f.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})</option>`).join('')}
         </select>
       </div>
       <div class="field"><label>Flight Leg 3 (2nd transfer)</label>
         <select onchange="setDraftLeg(3,this.value)" ${pnrDraft.leg2?'':'disabled'}>
           <option value="">— none —</option>
-          ${STATE.flights.map(f=>`<option value="${f.id}" ${pnrDraft.leg3===f.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})</option>`).join('')}
+          ${bookableFlights.map(f=>`<option value="${f.id}" ${pnrDraft.leg3===f.id?'selected':''}>${f.flightNo} ${f.from}-${f.to} (${f.date})</option>`).join('')}
         </select>
       </div>
     </div>
-    <small class="hint">${draftRouteSummary()}</small>
+    <small class="hint">${draftRouteSummary()} &nbsp; Past flights are not selectable — a PNR can only be created for today's or future flights.</small>
 
     <table style="margin-top:12px">
       <thead><tr><th>Title</th><th>Surname</th><th>Given Name</th><th>DOB</th><th>Passport No.</th><th>Nat.</th><th>Expiry</th><th>Class</th><th></th></tr></thead>
@@ -878,14 +1080,42 @@ function parseBulkImportPNRs(){
       errors.push(`PNR ${pnr}: ${ambiguous ? 'flight number matches more than one date — add @YYYY-MM-DD to disambiguate' : 'unknown flight number(s)'}, skipped`);
       return;
     }
+    const todayISO = new Date().toISOString().slice(0,10);
+    if(resolvedFlights.some(f=>f.date<todayISO || f.archived)){
+      errors.push(`PNR ${pnr}: one or more legs is a past/archived flight — a PNR cannot be created on it, skipped`);
+      return;
+    }
     const legIds = resolvedFlights.map(f=>f.id);
+
+    // check seat capacity per leg, per class, before importing this PNR's passengers
+    const newByClass = {};
+    group.rows.forEach(r=>{
+      const rc = ['economy','premium','business'].includes(r.cls) ? r.cls : 'economy';
+      newByClass[rc] = (newByClass[rc]||0)+1;
+    });
+    let capacityFail = null;
+    for(const legFlight of resolvedFlights){
+      const ac = getAircraftByReg(legFlight.tailNumber);
+      if(!ac) continue;
+      for(const rc of Object.keys(newByClass)){
+        const capacity = classSeatCapacity(ac, rc);
+        const already = classBookedCount(legFlight.id, rc);
+        if(already + newByClass[rc] > capacity){
+          capacityFail = `PNR ${pnr}: not enough ${classLabel(rc)} seats on ${legFlight.flightNo} (only ${Math.max(0,capacity-already)} remaining, needs ${newByClass[rc]}), skipped`;
+          break;
+        }
+      }
+      if(capacityFail) break;
+    }
+    if(capacityFail){ errors.push(capacityFail); return; }
+
     const legsState = {};
     legIds.forEach(fid=>{ legsState[fid] = { seat:null, checkedIn:false, seq:null, boarded:false }; });
     const passengers = group.rows.map(r=>({
       key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
       title:r.title, surname:r.surname, given:r.given, dob:r.dob,
       passportNumber:r.passport, nationality:r.nationality, passportExpiry:r.expiry,
-      cls:['economy','premium','business'].includes(r.cls) ? r.cls : 'economy', group:'-',
+      cls:['economy','premium','business'].includes(r.cls) ? r.cls : 'economy', group:'-', eTicket: genETicket(),
       legs: JSON.parse(JSON.stringify(legsState)), bags:0, bagWeights:[], bagTags:[]
     }));
     STATE.bookings.push({ pnr, legs:legIds, passengers });
@@ -930,10 +1160,29 @@ function updateDraftRow(i,field,v){ pnrDraft.rows[i][field]=v; }
 function submitCreatePnr(){
   const legIds = [pnrDraft.leg1,pnrDraft.leg2,pnrDraft.leg3].filter(Boolean);
   if(legIds.length===0) return notify('Select at least Flight Leg 1.');
+  const todayISO = new Date().toISOString().slice(0,10);
+  const legFlights = legIds.map(id=>STATE.flights.find(fl=>fl.id===id));
+  if(legFlights.some(fl=>!fl || fl.date<todayISO || fl.archived)) return notify('One or more selected legs is a past or archived flight — a PNR cannot be created on it.');
   const pnr = (pnrDraft.pnr||genPNR()).toUpperCase();
   if(STATE.bookings.some(b=>b.pnr===pnr)) return notify('This PNR already exists — regenerate or choose a different one.');
   const validRows = pnrDraft.rows.filter(r=>r.surname.trim());
   if(validRows.length===0) return notify('Add at least one passenger with a surname.');
+
+  // check seat capacity per leg, per class, before creating the booking
+  const newByClass = {};
+  validRows.forEach(r=>{ newByClass[r.cls] = (newByClass[r.cls]||0)+1; });
+  for(const legFlight of legFlights){
+    const ac = getAircraftByReg(legFlight.tailNumber);
+    if(!ac) continue; // no aircraft on this flight — can't check capacity, allow through
+    for(const cls of Object.keys(newByClass)){
+      const capacity = classSeatCapacity(ac, cls);
+      const already = classBookedCount(legFlight.id, cls);
+      const remaining = capacity - already;
+      if(newByClass[cls] > remaining){
+        return notify(`Not enough ${classLabel(cls)} seats on ${legFlight.flightNo} (${legFlight.from}-${legFlight.to}): only ${Math.max(0,remaining)} remaining, but this PNR needs ${newByClass[cls]}.`);
+      }
+    }
+  }
 
   const legsState = {};
   legIds.forEach(id=>{ legsState[id] = { seat:null, checkedIn:false, seq:null, boarded:false }; });
@@ -942,7 +1191,7 @@ function submitCreatePnr(){
     key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
     title:r.title, surname:r.surname.toUpperCase(), given:(r.given||'GIVENNAME').toUpperCase(),
     dob:r.dob, passportNumber:r.passport.toUpperCase(), nationality:r.nationality.toUpperCase(), passportExpiry:r.expiry,
-    cls:r.cls, group:'-',
+    cls:r.cls, group:'-', eTicket: genETicket(),
     legs: JSON.parse(JSON.stringify(legsState)),
     bags:0, bagWeights:[], bagTags:[]
   }));
@@ -1007,7 +1256,15 @@ function addFlight(){
       from:val('nf-from').toUpperCase(), fromCity:(val('nf-fromcity')||val('nf-from')).toUpperCase(),
       to:val('nf-to').toUpperCase(), toCity:(val('nf-tocity')||val('nf-to')).toUpperCase(),
       tailNumber: reg, aircraft: ac?ac.typeLabel:'UNKNOWN',
-      gate: val('nf-gate')||'-', boarding: val('nf-board')||'--:--', std: val('nf-std')||'--:--'
+      gate: val('nf-gate')||'-', boarding: val('nf-board')||'--:--', std: val('nf-std')||'--:--',
+      bpStyle: val('nf-bpstyle')||'turkish', airlineName: val('nf-airline')||'',
+      operatingAirline: val('nf-operatedby')||'', terminal: val('nf-terminal')||'',
+      bagAllowance: {
+        economy: parseInt(val('nf-bag-eco'))||20,
+        premium: parseInt(val('nf-bag-prem'))||25,
+        business: parseInt(val('nf-bag-biz'))||30
+      },
+      archived:false
     });
   });
 
@@ -1030,6 +1287,15 @@ function saveFlightEdit(){
   f.to = val('nf-to').toUpperCase(); f.toCity = (val('nf-tocity')||val('nf-to')).toUpperCase();
   f.tailNumber = reg; f.aircraft = ac?ac.typeLabel:'UNKNOWN';
   f.gate = val('nf-gate')||'-'; f.boarding = val('nf-board')||'--:--'; f.std = val('nf-std')||'--:--';
+  f.bpStyle = val('nf-bpstyle')||'turkish';
+  f.airlineName = val('nf-airline')||'';
+  f.operatingAirline = val('nf-operatedby')||'';
+  f.terminal = val('nf-terminal')||'';
+  f.bagAllowance = {
+    economy: parseInt(val('nf-bag-eco'))||20,
+    premium: parseInt(val('nf-bag-prem'))||25,
+    business: parseInt(val('nf-bag-biz'))||30
+  };
   editingFlightId = null;
   saveState(); render();
 }
@@ -1047,7 +1313,52 @@ function deleteFlight(id){
 }
 function cancelDeleteFlight(){ pendingDeleteFlightId=null; render(); }
 
+let showArchived = false;
+
+function archiveFlight(id){
+  const f = STATE.flights.find(x=>x.id===id);
+  if(!f) return;
+  f.archived = true;
+  if(STATE.selection.flightId===id){
+    const next = STATE.flights.find(x=>!x.archived);
+    if(next) STATE.selection.flightId = next.id;
+  }
+  saveState(); render();
+  notify(`${f.flightNo} archived.`, 'ok');
+}
+
+function unarchiveFlight(id){
+  const f = STATE.flights.find(x=>x.id===id);
+  if(!f) return;
+  f.archived = false;
+  saveState(); render();
+}
+
+function archiveAllPastFlights(){
+  const todayISO = new Date().toISOString().slice(0,10);
+  let count = 0;
+  STATE.flights.forEach(f=>{
+    if(!f.archived && f.date<todayISO){ f.archived = true; count++; }
+  });
+  if(count>0 && STATE.selection.flightId){
+    const cur = STATE.flights.find(x=>x.id===STATE.selection.flightId);
+    if(cur && cur.archived){
+      const next = STATE.flights.find(x=>!x.archived);
+      if(next) STATE.selection.flightId = next.id;
+    }
+  }
+  saveState(); render();
+  notify(`Archived ${count} past flight(s).`, 'ok');
+}
+
+
 function genPNR(){ const chars='ABCDEFGHJKLMNPQRSTUVWXYZ0123456789'; let s=''; for(let i=0;i<6;i++) s+=chars[Math.floor(Math.random()*chars.length)]; return s; }
+
+function genETicket(){
+  STATE.eTicketCounter = (STATE.eTicketCounter||0)+1;
+  const serial = String(STATE.eTicketCounter).padStart(10,'0');
+  return `${AIRLINE.btic}-${serial}`; // standard 13-digit e-ticket format: 3-digit airline numeric code + 10-digit serial
+}
 
 function apisStatus(p,f){
   if(!p.passportNumber || !p.nationality || !p.passportExpiry || !p.dob) return {ok:false, reason:'Passport data incomplete'};
@@ -1268,6 +1579,7 @@ function renderCheckin(){
     paxHtml = booking.passengers.map(p=>{
       const bw = p.bagWeights || [];
       const totalWt = bw.reduce((s,w)=>s+w,0);
+      const freeAllowance = (flight.bagAllowance && flight.bagAllowance[p.cls]) || {economy:20,premium:25,business:30}[p.cls] || 20;
       const bagRows = bw.map((w,i)=>`
         <span style="display:inline-flex;align-items:center;gap:3px;background:#eef1f5;border:1px solid var(--border);border-radius:2px;padding:2px 4px;">
           <input type="number" min="0" max="60" step="0.5" value="${w}" style="width:52px;min-width:52px;padding:3px 4px;font-size:11px" onchange="setBagWeight('${booking.pnr}','${p.key}',${i},this.value)">kg
@@ -1317,7 +1629,7 @@ function renderCheckin(){
       return `
       <div class="pax-card" style="flex-direction:column;align-items:stretch;">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <div class="name">${p.surname}/${p.given}</div>
+          <div class="name">${p.surname}/${p.given} <span style="font-weight:400;font-size:10.5px;color:#5a6b7d">ETKT ${p.eTicket||'—'}</span></div>
           <div class="field"><label>Title</label>
             <select style="width:70px" ${legState.checkedIn?'disabled':''} onchange="setPaxTitle('${booking.pnr}','${p.key}',this.value)">
               ${['MR','MRS','CHD'].map(t=>`<option value="${t}" ${p.title===t?'selected':''}>${t}</option>`).join('')}
@@ -1347,7 +1659,8 @@ function renderCheckin(){
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
           <span style="font-size:10.5px;font-weight:700;color:#3a4553;text-transform:uppercase;">Baggage — through to final destination (${bw.length} pc / ${totalWt.toFixed(1)}kg):</span>
           ${bagRows || '<span style="font-size:11px;color:#5a6b7d">no bags added</span>'}
-          <button class="btn secondary small" ${p.bagTags.length?'disabled title="Already tagged"':''} onclick="addBagRow('${booking.pnr}','${p.key}')">+ Add Bag (23kg)</button>
+          <button class="btn secondary small" ${p.bagTags.length?'disabled title="Already tagged"':''} onclick="addBagRow('${booking.pnr}','${p.key}')">+ Add Bag (${freeAllowance}kg)</button>
+          <span style="font-size:10.5px;color:${totalWt>freeAllowance?'#a03':'#5a6b7d'}">Free allowance (${classLabel(p.cls)}): ${freeAllowance}kg${totalWt>freeAllowance?` — ${(totalWt-freeAllowance).toFixed(1)}kg excess`:''} · 32kg max per bag</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);">
           <span style="font-size:10.5px;font-weight:700;color:#3a4553;text-transform:uppercase;">Passport / APIS:</span>
@@ -1452,13 +1765,27 @@ function addPaxToExistingPnr(pnr){
   if(!booking) return;
   const surname = val('ap-surname');
   if(!surname) return notify('Enter a surname.');
+  const cls = val('ap-cls');
+
+  for(const fid of booking.legs){
+    const flight = STATE.flights.find(fl=>fl.id===fid);
+    if(!flight) continue;
+    const ac = getAircraftByReg(flight.tailNumber);
+    if(!ac) continue;
+    const capacity = classSeatCapacity(ac, cls);
+    const already = classBookedCount(fid, cls);
+    if(already + 1 > capacity){
+      return notify(`No ${classLabel(cls)} seats remaining on ${flight.flightNo} (${flight.from}-${flight.to}) — that class is full on this flight.`);
+    }
+  }
+
   const legsState = {};
   booking.legs.forEach(fid=>{ legsState[fid] = { seat:null, checkedIn:false, seq:null, boarded:false }; });
   booking.passengers.push({
     key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
     title: val('ap-title'), surname: surname.toUpperCase(), given:(val('ap-given')||'GIVENNAME').toUpperCase(),
     dob: val('ap-dob'), passportNumber: val('ap-passport').toUpperCase(), nationality: val('ap-nationality').toUpperCase(),
-    passportExpiry: val('ap-expiry'), cls: val('ap-cls'), group:'-',
+    passportExpiry: val('ap-expiry'), cls, group:'-', eTicket: genETicket(),
     legs: legsState, bags:0, bagWeights:[], bagTags:[]
   });
   addPaxFormOpen = false;
@@ -1558,7 +1885,10 @@ function addBagRow(pnr,key){
   if(p.bagTags && p.bagTags.length) return notify('Bags are already tagged through for this passenger.');
   if(!p.bagWeights) p.bagWeights=[];
   if(p.bagWeights.length>=9) return notify('Maximum 9 bags per passenger in this simulation.');
-  p.bagWeights.push(23);
+  const refFlightId = (STATE.selection.flightId && b.legs.includes(STATE.selection.flightId)) ? STATE.selection.flightId : b.legs[0];
+  const refFlight = STATE.flights.find(fl=>fl.id===refFlightId);
+  const defaultW = (refFlight && refFlight.bagAllowance && refFlight.bagAllowance[p.cls]) || {economy:20,premium:25,business:30}[p.cls] || 20;
+  p.bagWeights.push(defaultW);
   saveState(); render();
 }
 function removeBagRow(pnr,key,idx){
@@ -1569,6 +1899,11 @@ function removeBagRow(pnr,key,idx){
 function setBagWeight(pnr,key,idx,v){
   const b=STATE.bookings.find(x=>x.pnr===pnr); const p=b.passengers.find(x=>x.key===key);
   const w = Math.max(0, parseFloat(v)||0);
+  if(w>32){
+    notify(`This bag is ${w}kg — over the 32kg IATA maximum handling limit. It cannot be checked in at this weight; it must be split into smaller pieces or repacked.`, 'err');
+    render(); // redraw the input back to its last valid stored value
+    return;
+  }
   p.bagWeights[idx] = w;
   saveState();
 }
@@ -1723,9 +2058,10 @@ function ensureThroughBagTags(booking, pax){
   pax.bags = weights.length;
   pax.bagTags = [];
   weights.forEach(w=>{
+    const safeW = Math.min(w, 32); // hard IATA handling cap — defense in depth alongside setBagWeight's own check
     STATE.bagCounters[lastLegId] = (STATE.bagCounters[lastLegId]||0)+1;
     const serial = String(STATE.bagCounters[lastLegId]).padStart(6,'0');
-    pax.bagTags.push({ lp:`0${AIRLINE.btic}${serial}`, weight:w }); // 10-digit license plate: 0 + BTIC(3) + serial(6)
+    pax.bagTags.push({ lp:`0${AIRLINE.btic}${serial}`, weight:safeW }); // 10-digit license plate: 0 + BTIC(3) + serial(6)
   });
 }
 
@@ -1781,7 +2117,7 @@ function renderPassTab(){
     <div id="bpass-print" class="print-target">
       ${boardingPassHTML(p,f)}
     </div>
-    <small class="hint">Layout replicates a Turkish Airlines ATB stock boarding pass (main coupon + agent stub), size 203mm × 76mm (official IATA ATB dimensions). The tall barcode on the left is a genuine, standards-compliant PDF417 symbol (generated with bwip-js) carrying the same BCBP-style data — it is a real decodable barcode, not a visual placeholder, and the Boarding Gate tab reads it back with an actual PDF417 decoder (ZXing), not a QR-code workaround. Printing auto-scales this to fill an A4 sheet in whichever orientation fits best.</small>
+    <small class="hint">Layout uses the standard ATB stock boarding-pass shell (main coupon + agent stub), size 203mm × 76mm (official IATA ATB dimensions) — shared by all four styles (Turkish/Aeroflot/Charter/Çelebi), only colors and field labels differ per style, set per flight in Flight Setup. The tall barcode on the left is a genuine, standards-compliant PDF417 symbol (generated with bwip-js) carrying the same BCBP-style data — it is a real decodable barcode, not a visual placeholder, and the Boarding Gate tab reads it back with an actual PDF417 decoder (ZXing). Printing auto-scales this to fill an A4 sheet in whichever orientation fits best.</small>
     </div>
   </div>
   `;
@@ -1789,12 +2125,21 @@ function renderPassTab(){
 
 
 function boardingPassHTML(p,f){
+  const style = f.bpStyle || 'turkish';
+  if(style==='aeroflot') return boardingPassHTML_Aeroflot(p,f);
+  if(style==='charter') return boardingPassHTML_Charter(p,f);
+  if(style==='celebi') return boardingPassHTML_Celebi(p,f);
+  return boardingPassHTML_Turkish(p,f);
+}
+
+function boardingPassHTML_Turkish(p,f){
   const bcbp = `M1${p.surname}/${p.given[0]}          ${p.pnr} ${f.from}${f.to}${AIRLINE.iata} 0${f.flightNo.replace(/\D/g,'')} ${classCodeLetter(p.cls)}${p.seat}${p.seq}`;
   const fnum = f.flightNo.replace(/\D/g,'');
   const cc = classCodeLetter(p.cls);
   const group = p.group && p.group!=='-' ? p.group : '—';
   const bagCount = p.bags||0;
-  const ticketLine = `${p.seq} ${fnum} ${cc}${p.seat} ${bagCount}/${bagCount}`;
+  const eTicket = p.eTicket || '—';
+  const ticketLine = `${p.seq} ${fnum} ${cc}${p.seat} ${bagCount}/${bagCount} &nbsp; ETKT ${eTicket}`;
   const apis = apisStatus(p, f);
   const apisLabel = apis.ok ? 'APIS OK' : 'APIS FAIL';
 
@@ -1860,6 +2205,229 @@ function boardingPassHTML(p,f){
   </div>`;
 }
 
+/* =====================================================================
+   ALTERNATE BOARDING PASS STYLES — Çelebi / Aeroflot / Charter
+===================================================================== */
+function bpBcbpString(p,f){
+  return `M1${p.surname}/${p.given[0]}          ${p.pnr} ${f.from}${f.to}${AIRLINE.iata} 0${f.flightNo.replace(/\D/g,'')} ${classCodeLetter(p.cls)}${p.seat}${p.seq}`;
+}
+
+/* ---------- ÇELEBİ GROUND HANDLING STYLE (same 203x76mm landscape shell as Turkish) ---------- */
+function boardingPassHTML_Celebi(p,f){
+  const bcbp = bpBcbpString(p,f);
+  const cc = classCodeLetter(p.cls);
+  const bagCount = p.bags||0;
+  const zone = p.group && p.group!=='-' ? p.group : '-';
+
+  return `
+  <div class="pass">
+    <div class="coupon main">
+      <div class="redhead rh-celebi">
+        <div class="brand">Ç ÇELEBİ</div>
+        <div class="divider"></div>
+        <div class="bp-label">BİNİŞ KARTI | BOARDING PASS</div>
+        <div class="spacer"></div>
+        <div class="star">GROUND HANDLING</div>
+      </div>
+      <div class="body">
+        <div class="content cel-content" style="padding-left:6mm">
+          <div class="cel-row">
+            <div class="cel-label">NAME OF PASSENGER (NOT TRANSFERABLE)</div>
+            <div class="cel-value">${p.surname}/${p.given} ${p.title==='CHD'?'CHD':''}</div>
+          </div>
+          <div class="cel-row2">
+            <div><div class="cel-label">X/O FROM</div><div class="cel-value">${f.fromCity}</div></div>
+            <div><div class="cel-label">X/O TO</div><div class="cel-value">${f.toCity}</div></div>
+          </div>
+          <div class="cel-grid4">
+            <div><div class="cel-label">FLIGHT</div><div class="cel-value">${f.flightNo}</div></div>
+            <div><div class="cel-label">CLASS</div><div class="cel-value">${cc}</div></div>
+            <div><div class="cel-label">DATE</div><div class="cel-value">${fmtDate(f.date)}</div></div>
+            <div><div class="cel-label">TIME</div><div class="cel-value">${timeNoColon(f.std)}</div></div>
+          </div>
+          <div class="cel-bottomrow">
+            <div class="cel-barcode-inline"><canvas id="pdf417flat-${p.key}-${f.id}" data-bcbp="${encodeURIComponent(bcbp)}"></canvas></div>
+            <div class="cel-sidelist">
+              <div><span class="cel-label">ZONE</span><span class="cel-value">${zone}</span></div>
+              <div><span class="cel-label">TIME</span><span class="cel-value">${timeNoColon(f.boarding)}</span></div>
+              <div><span class="cel-label">SEAT</span><span class="cel-value">${p.seat}</span></div>
+              <div><span class="cel-label">SEQ.NO.</span><span class="cel-value">${p.seq}</span></div>
+            </div>
+          </div>
+          <div class="cel-microtext">DO NOT MARK OR WRITE IN THE WHITE AREA ABOVE</div>
+        </div>
+      </div>
+    </div>
+    <div class="coupon stub">
+      <div class="redhead rh-celebi">
+        <div class="brand" style="font-size:9.5px">Ç ÇELEBİ</div>
+        <div class="divider"></div>
+        <div class="bp-label" style="font-size:8px">BİNİŞ KARTI<br>BOARDING PASS</div>
+      </div>
+      <div class="body">
+        <div class="content cel-content cel-stub-narrow" style="padding:1.5mm 4mm">
+          <div class="cel-row">
+            <div class="cel-label">NAME OF PASSENGER</div>
+            <div class="cel-value">${p.surname}/${p.given} ${p.title==='CHD'?'CHD':''}</div>
+          </div>
+          <div class="cel-row2">
+            <div><div class="cel-label">X/O FROM</div><div class="cel-value">${f.fromCity}</div></div>
+            <div><div class="cel-label">X/O TO</div><div class="cel-value">${f.toCity}</div></div>
+          </div>
+          <div class="cel-grid4">
+            <div><div class="cel-label">FLIGHT</div><div class="cel-value">${f.flightNo}</div></div>
+            <div><div class="cel-label">CLASS</div><div class="cel-value">${cc}</div></div>
+            <div><div class="cel-label">DATE</div><div class="cel-value">${fmtDate(f.date)}</div></div>
+            <div><div class="cel-label">TIME</div><div class="cel-value">${timeNoColon(f.std)}</div></div>
+          </div>
+          <div class="cel-grid4" style="margin-top:2mm">
+            <div><div class="cel-label">GATE</div><div class="cel-value">${f.gate}</div></div>
+            <div><div class="cel-label">BOARDING TIME</div><div class="cel-value">${timeNoColon(f.boarding)}</div></div>
+            <div><div class="cel-label">SEAT</div><div class="cel-value">${p.seat}</div></div>
+            <div><div class="cel-label">SMOKE</div><div class="cel-value">N</div></div>
+          </div>
+          <div class="cel-label" style="margin-top:2mm">PCS.CK.WT. / UNCK.WT. / SEQ.NO.</div>
+          <div class="cel-value" style="font-size:15px">${bagCount}/0 &nbsp; ${p.seq}</div>
+          <div class="cel-label" style="margin-top:1.5mm">ADDITIONAL SEAT INFORMATION</div>
+          <div class="cel-value" style="font-size:15px">—</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- AEROFLOT STYLE — built from scratch (see .af2- CSS block), only .pass/.coupon shared for the 203x76mm envelope ---------- */
+function boardingPassHTML_Aeroflot(p,f){
+  const bcbp = bpBcbpString(p,f);
+  const cc = classCodeLetter(p.cls);
+  const fareCode = (p.pnr.slice(0,2)+p.seat+p.pnr.slice(-2)).toUpperCase(); // realistic-looking fare-basis code, e.g. FFGGZT
+  const operator = operatingAirlineFor(f);
+  const terminal = f.terminal || '1';
+
+  return `
+  <div class="pass">
+    <div class="coupon main" style="width:73%;border-right:2px dashed #999;">
+      <div class="af2-wrap">
+        <div class="af2-topline">
+          <div class="af2-title">BOARDING PASS<br>ПОСАДОЧНЫЙ ТАЛОН</div>
+          <div class="af2-issuedby">
+            <div class="af2-logo">✈ AEROFLOT<small>Russian Airlines</small></div>
+          </div>
+        </div>
+
+        <div class="af2-field"><label>NAME OF PASSENGER / ИМЯ ПАССАЖИРА</label><span>${p.surname}/${p.given}</span></div>
+        <div class="af2-row2">
+          <div class="af2-field"><label>FROM / ОТКУДА</label><span>${f.fromCity} / ${f.from}</span></div>
+          <div class="af2-field"><label>TO / КУДА</label><span>${f.toCity} / ${f.to}</span></div>
+        </div>
+
+        <div class="af2-row3">
+          <div><label>FLIGHT / РЕЙС</label><span>${f.flightNo}</span></div>
+          <div><label>CLASS / КЛАСС</label><span>${cc}</span></div>
+          <div><label>DATE / TIME</label><span>${fmtDate(f.date)} ${timeNoColon(f.std)}</span></div>
+          <div><label>FARE BASIS</label><span>${fareCode}</span></div>
+        </div>
+        <div class="af2-codeshare">OPERATED BY ${operator}</div>
+
+        <div class="af2-bottomrow">
+          <div class="af2-barcode"><canvas id="pdf417flat-${p.key}-${f.id}" data-bcbp="${encodeURIComponent(bcbp)}"></canvas></div>
+          <div class="af2-bigfields">
+            <div class="af2-bf"><label>SEAT</label><span>${p.seat}</span></div>
+            <div class="af2-bf"><label>GATE</label><span>${f.gate}</span></div>
+            <div class="af2-bf"><label>BOARDING TIME</label><span>${timeNoColon(f.boarding)}</span></div>
+          </div>
+        </div>
+
+        <div class="af2-footer">HAVE A NICE TRIP! Gate closes 20 minutes before departure.<br>СЧАСТЛИВОГО ПУТИ! Посадка заканчивается за 20 минут до времени вылета.</div>
+        <div class="af2-refs2"><span>SEQ NO. ${p.seq}</span><span>ELECTRONIC TKT ${p.eTicket||'—'}</span></div>
+      </div>
+    </div>
+    <div class="coupon stub" style="width:27%;">
+      <div class="af2-wrap af2-stub-wrap">
+        <div class="af2-topline">
+          <div class="af2-title" style="font-size:8px">BOARDING PASS<br>ПОСАДОЧНЫЙ ТАЛОН</div>
+          <div class="af2-logo" style="font-size:10px">✈ AEROFLOT</div>
+        </div>
+
+        <div class="af2-field"><label>NAME OF PASSENGER / ИМЯ ПАССАЖИРА</label><span>${p.surname}/${p.given}</span></div>
+        <div class="af2-field"><label>FROM / ОТКУДА</label><span>${f.fromCity} / ${f.from}</span></div>
+        <div class="af2-field"><label>TO / КУДА</label><span>${f.toCity} / ${f.to}</span></div>
+        <div class="af2-field"><span style="font-weight:700">${operator}</span></div>
+        <div class="af2-field"><label>TERMINAL</label><span>${terminal}</span></div>
+
+        <div class="af2-row3">
+          <div><label>FLIGHT / CLASS / DATE</label><span>${f.flightNo}${cc} ${fmtDate(f.date)} ${timeNoColon(f.std)}</span></div>
+        </div>
+        <div class="af2-row3">
+          <div><label>GATE / BOARDING / SEAT</label><span>${f.gate} ${timeNoColon(f.boarding)} ${p.seat}</span></div>
+        </div>
+
+        <div class="af2-bottomcode">SEQ ${p.seq} &nbsp; ${f.from}/${f.to}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- CHARTER (generic thermal, no branding) STYLE (same 203x76mm landscape shell) ---------- */
+function boardingPassHTML_Charter(p,f){
+  const bcbp = bpBcbpString(p,f);
+  const cc = classCodeLetter(p.cls);
+
+  return `
+  <div class="pass">
+    <div class="coupon main">
+      <div class="redhead rh-charter" style="display:none"></div>
+      <div class="body">
+        <div class="barcode-col"><canvas id="pdf417-${p.key}-${f.id}" data-bcbp="${encodeURIComponent(bcbp)}"></canvas></div>
+        <div class="content ch-content">
+          <div class="ch-cols">
+            <div class="ch-left">
+              <div class="ch-lrow"><label>PASSENGER</label><span>${p.surname}/${p.given}</span></div>
+              <div class="ch-lrow"><label>FLYING FROM</label><span>${f.fromCity}</span></div>
+              <div class="ch-lrow"><label>TO</label><span>${f.toCity}</span></div>
+              <div class="ch-lrow"><label>ON FLIGHT</label><span>${f.flightNo}</span></div>
+              <div class="ch-lrow"><label>DEPARTURE DATE</label><span>${fmtDate(f.date)}</span></div>
+              <div class="ch-lrow"><label>DEPARTURE TIME</label><span>${timeNoColon(f.std)}</span></div>
+              <div class="ch-lrow"><label>SSRS</label><span></span></div>
+              <div class="ch-lrow"><label>TKT</label><span>PAPER</span></div>
+            </div>
+            <div class="ch-right">
+              <div class="ch-rrow ch-rrow-pnr"><label>PNR</label><span>${p.pnr}</span></div>
+              <div class="ch-rrow"><label>GATE</label><span>${f.gate}</span></div>
+              <div class="ch-rrow"><label>BOARDING AT</label><span>${timeNoColon(f.boarding)}</span></div>
+              <div class="ch-rrow"><label>SEC</label><span>${p.seq}</span></div>
+              <div class="ch-rrow"><label>SEAT</label><span>${seatWithDash(p.seat)}</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="coupon stub">
+      <div class="redhead rh-charter" style="display:none"></div>
+      <div class="body">
+        <div class="content ch-content" style="padding:2.5mm 4mm;justify-content:space-between;height:100%;box-sizing:border-box;position:absolute;top:0;left:0;right:0;bottom:0;">
+          <div class="ch-stub-narrow">
+          <div class="ch-lrow"><label>PNR</label><span>${p.pnr}</span></div>
+          <div class="ch-stacked"><label>PASSENGER</label><span>${p.surname}/${p.given}</span></div>
+          <div class="ch-stacked"><label>FROM</label><span>${f.fromCity}</span></div>
+          <div class="ch-stacked"><label>TO</label><span>${f.toCity}</span></div>
+          </div>
+          <div class="ch-stub-block">
+            <div class="ch-stub-grid3"><span>FLIGHT</span><span>CLASS</span><span>DATE</span></div>
+            <div class="ch-stub-val3"><span>${f.flightNo}</span><span>${cc}</span><span>${fmtDate(f.date)}</span></div>
+          </div>
+          <div class="ch-stub-block">
+            <div class="ch-stub-grid3"><span>GATE</span><span>BOARDING</span><span>SEC</span></div>
+            <div class="ch-stub-val3"><span>${f.gate}</span><span>${timeNoColon(f.boarding)}</span><span>${p.seq}</span></div>
+          </div>
+          <div class="ch-stub-seat">SEAT ${seatWithDash(p.seat)}</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+
 /* Renders a REAL, standards-compliant PDF417 barcode (via bwip-js) at natural
    orientation onto an offscreen canvas, then composites it rotated 90° onto the
    visible canvas so it reads top-to-bottom like the printed TK stock — same data
@@ -1883,11 +2451,36 @@ function renderVerticalPDF417(canvasEl, text){
   ctx.restore();
 }
 
+/* Compact, NOT rotated PDF417 — used by styles (e.g. Çelebi) whose real stock
+   prints the barcode as a small square-ish block inline with other fields,
+   rather than as a tall strip running the full height of the coupon. */
+function renderCompactPDF417(canvasEl, text){
+  try{
+    bwipjs.toCanvas(canvasEl, {
+      bcid:'pdf417', text:text, scale:2, columns:6, rowheight:2,
+      includetext:false, backgroundcolor:'FFFFFF', paddingwidth:3, paddingheight:3
+    });
+  }catch(e){ console.error('Compact PDF417 render failed', e); }
+}
+
 function drawBoardingPassBarcode(){
   document.querySelectorAll('canvas[id^="pdf417-"]').forEach(el=>{
     const text = decodeURIComponent(el.dataset.bcbp);
     try{ renderVerticalPDF417(el, text); }
     catch(e){ console.error('PDF417 render failed', e); }
+  });
+  document.querySelectorAll('canvas[id^="pdf417flat-"]').forEach(el=>{
+    const text = decodeURIComponent(el.dataset.bcbp);
+    renderCompactPDF417(el, text);
+  });
+  document.querySelectorAll('canvas[id^="code128bp-"]').forEach(el=>{
+    const code = el.dataset.code;
+    try{
+      bwipjs.toCanvas(el, {
+        bcid:'code128', text:code, scale:2, height:12,
+        includetext:false, backgroundcolor:'FFFFFF', paddingwidth:2, paddingheight:1
+      });
+    }catch(e){ console.error('Code128 (boarding pass) render failed', e); }
   });
 }
 
@@ -1956,7 +2549,7 @@ function viaBoxHTML(stopIndex, legs){
   return `<div class="viabox">
     <div class="toplab">VIA: ${arrLeg.toCity}</div>
     <div class="city">${arrLeg.to}</div>
-    <div class="bottomrow"><span>${AIRLINE.iata} ${arrLeg.flightNo.replace(/\D/g,'')}</span><span>${fmtDate(arrLeg.date)}</span></div>
+    <div class="bottomrow"><span>${arrLeg.flightNo}</span><span>${fmtDate(arrLeg.date)}</span></div>
   </div>`;
 }
 
@@ -1967,7 +2560,7 @@ function destViaBlockHTML(p,legs,destFlight){
     <div class="destrow">
       <div class="toplab">TO: ${destFlight.toCity}</div>
       <div class="city">${destFlight.to}</div>
-      <div class="bottomrow"><span>${AIRLINE.iata} ${destFlight.flightNo.replace(/\D/g,'')}</span><span>${fmtDate(destFlight.date)}</span></div>
+      <div class="bottomrow"><span>${destFlight.flightNo}</span><span>${fmtDate(destFlight.date)}</span></div>
     </div>
     ${viaBox1}
     ${viaBox2}`;
@@ -2001,7 +2594,7 @@ function bagTagHTML(p,legs,licensePlate,weight,idx){
 
     <div class="databox">
       <div class="row" style="justify-content:space-between"><span>${last6}</span><span>${classCodeLetter(p.cls)}P</span><span>${last6.slice(-4)}</span></div>
-      <div class="row" style="justify-content:space-between"><span>${classCodeLetter(p.cls)}P</span><span>${AIRLINE.iata}${destFlight.flightNo.replace(/\D/g,'').slice(-1)}</span><span>${licensePlate.slice(1,7)}</span></div>
+      <div class="row" style="justify-content:space-between"><span>${classCodeLetter(p.cls)}P</span><span>${destFlight.flightNo.replace(/\D/g,'').slice(-1)}</span><span>${licensePlate.slice(1,7)}</span></div>
       <div class="row">${fmtDate(originFlight.date)} &nbsp; ${originFlight.from}</div>
     </div>
 
@@ -2012,8 +2605,8 @@ function bagTagHTML(p,legs,licensePlate,weight,idx){
     <div class="databox">
       <div class="row">NME:${p.surname}/${p.given.slice(0,3)}</div>
       <div class="row">${fmtDate(originFlight.date)} &nbsp; ${bagCount}/${bagWeightField} &nbsp; ${originFlight.from} &nbsp; ${p.pnr}</div>
-      <div class="row">${AIRLINE.iata}${originFlight.flightNo.replace(/\D/g,'')} &nbsp; ${destFlight.toCity} &nbsp; ${destFlight.to}</div>
-      <div class="row">${AIRLINE.iata}${destFlight.flightNo.replace(/\D/g,'')} &nbsp; ${destFlight.to}</div>
+      <div class="row">${originFlight.flightNo} &nbsp; ${destFlight.toCity} &nbsp; ${destFlight.to}</div>
+      <div class="row">${destFlight.flightNo} &nbsp; ${destFlight.to}</div>
       <div class="row">${last6.slice(0,4)} &nbsp; ${classCodeLetter(p.cls)}P &nbsp; ${last6}</div>
     </div>
 
@@ -2027,6 +2620,12 @@ function fmtDate(iso){
   const d=new Date(iso+"T00:00:00");
   const months=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
   return String(d.getDate()).padStart(2,'0')+months[d.getMonth()];
+}
+function timeNoColon(t){ return (t||'--:--').replace(':',''); }
+function seatWithDash(seat){
+  if(!seat) return seat;
+  const m = seat.match(/^(\d+)([A-Za-z])$/);
+  return m ? `${m[1]}-${m[2]}` : seat;
 }
 
 /* Draws real Code128 barcodes (via bwip-js) for every canvas on the bag tag —
@@ -2286,6 +2885,7 @@ function renderManifest(){
       <td>${p.seq||'—'}</td>
       <td>${p.title} ${p.surname}/${p.given}${p.transfer?' <span style="color:#5a6b7d">(TFR)</span>':''}</td>
       <td>${p.pnr}</td>
+      <td style="font-size:11px">${p.eTicket||'—'}</td>
       <td><span class="badge ${p.cls}">${classCodeLetter(p.cls)}</span></td>
       <td>${p.seat||'—'}</td>
       <td>${p.bags}</td>
@@ -2310,12 +2910,12 @@ function renderManifest(){
     </div>
     <div id="manifest-print" class="print-target">
       <div style="font-family:Arial;margin-bottom:8px;font-size:12px;">
-        <b>${AIRLINE.name}</b> — Flight ${flight.flightNo} — ${flight.fromCity} (${flight.from}) → ${flight.toCity} (${flight.to}) — ${flight.date} — STD ${flight.std} — Gate ${flight.gate}<br>
+        <b>${airlineNameFor(flight)}</b> — Flight ${flight.flightNo} — ${flight.fromCity} (${flight.from}) → ${flight.toCity} (${flight.to}) — ${flight.date} — STD ${flight.std} — Gate ${flight.gate}<br>
         Total Pax: ${total} &nbsp;|&nbsp; Boarded: ${boarded} &nbsp;|&nbsp; Total Bags: ${bags} &nbsp;|&nbsp; Total Weight: ${totalWeight.toFixed(1)}kg
       </div>
       <table>
-        <thead><tr><th>SEQ</th><th>Passenger Name</th><th>PNR</th><th>CL</th><th>Seat</th><th>Bags</th><th>Weight</th><th>Check-in</th><th>Board</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="9" class="empty">No passengers</td></tr>'}</tbody>
+        <thead><tr><th>SEQ</th><th>Passenger Name</th><th>PNR</th><th>ETKT</th><th>CL</th><th>Seat</th><th>Bags</th><th>Weight</th><th>Check-in</th><th>Board</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="10" class="empty">No passengers</td></tr>'}</tbody>
       </table>
     </div>
     </div>
@@ -2328,10 +2928,23 @@ function renderManifest(){
 ===================================================================== */
 function printEl(id){
   const el = document.getElementById(id);
-  const isPass = el.querySelector('.pass');
+  const isPass = el.querySelector('.pass, .bp-celebi, .bp-aeroflot, .bp-charter');
   const isBagtag = el.querySelector('.bagtag');
   const style = document.createElement('style');
   style.id = 'dynamic-print-style';
+
+  // The .print-target CLASS exists on every passenger's hidden print block at
+  // once (Check-In renders one per leg's boarding pass and one per bag tag,
+  // for every passenger) — so the global ".print-target{visibility:visible}"
+  // rule alone would reveal ALL of them together. Override it here so ONLY
+  // the specific element the user clicked (matched by unique id) shows up.
+  const visibilityRule = `
+    @media print{
+      .print-target, .print-target *{ visibility:hidden !important; }
+      #${id}, #${id} *{ visibility:visible !important; }
+      #${id}{ position:absolute !important; top:0; left:0; }
+    }
+  `;
 
   if(isPass || isBagtag){
     // Single fixed-size document (boarding pass / bag tag): measure its real
@@ -2353,6 +2966,7 @@ function printEl(id){
     const scale = (useLandscape ? scaleLandscape : scalePortrait) * 0.98; // tiny safety margin
 
     style.innerHTML = `
+      ${visibilityRule}
       @page{ size:A4 ${useLandscape?'landscape':'portrait'}; margin:${margin}mm; }
       #${id}.print-target{ transform:scale(${scale}); transform-origin:top left; }
     `;
@@ -2360,7 +2974,10 @@ function printEl(id){
     // Variable-length content (e.g. the passenger manifest table): print it
     // plainly, letting it flow across as many A4 pages as it naturally needs —
     // no forced single-page shrink here.
-    style.innerHTML = `@page{ size:A4; margin:14mm; }`;
+    style.innerHTML = `
+      ${visibilityRule}
+      @page{ size:A4; margin:14mm; }
+    `;
   }
 
   document.head.appendChild(style);
