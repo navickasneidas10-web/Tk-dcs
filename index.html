@@ -920,13 +920,13 @@ function renderFlights(){
     </div>
     <div class="field" style="margin-top:8px;width:100%">
       <label>Paste CSV data (comma or semicolon separated)</label>
-      <textarea id="bulk-import-text" rows="7" style="width:100%;font-family:var(--mono);font-size:12px;padding:8px;border:1px solid #c7ccd4;border-radius:4px;resize:vertical;" placeholder="PNR,LEG1_FLIGHTNO,LEG2_FLIGHTNO,LEG3_FLIGHTNO,TITLE,SURNAME,GIVEN,DOB,PASSPORT,NATIONALITY,EXPIRY,CLASS
+      <textarea id="bulk-import-text" rows="7" style="width:100%;font-family:var(--mono);font-size:12px;padding:8px;border:1px solid #c7ccd4;border-radius:4px;resize:vertical;" placeholder="PNR,LEG1_FLIGHTNO,LEG2_FLIGHTNO,LEG3_FLIGHTNO,TITLE,SURNAME,GIVEN,DOB,PASSPORT,NATIONALITY,EXPIRY,CLASS,SEAT1,SEAT2,SEAT3
 ${bulkTemplateRows().trim()}"></textarea>
     </div>
     <div class="row" style="margin-top:8px">
       <button class="btn" onclick="parseBulkImportPNRs()">Import PNRs</button>
     </div>
-    <small class="hint">Columns: PNR, up to 3 flight numbers (must already exist above — LEG2/LEG3 blank means direct/no transfer), then title, surname, given name, DOB, passport no., nationality, passport expiry, class (economy/premium/business). City names are never needed — they're pulled automatically from the matched flight. If a flight number exists on more than one date, add the date to disambiguate: TK0186@2026-07-13. Multiple rows sharing the same PNR become passengers on one shared booking with the same legs. PNRs that already exist are skipped, not overwritten.</small>
+    <small class="hint">Columns: PNR, up to 3 flight numbers (must already exist above — LEG2/LEG3 blank means direct/no transfer), then title, surname, given name, DOB, passport no., nationality, passport expiry, class (economy/premium/business), and up to three optional seat columns (SEAT1/SEAT2/SEAT3, e.g. 12A) — one per leg, leave any blank to assign at Check-In instead. City names are never needed — they're pulled automatically from the matched flight. If a flight number exists on more than one date, add the date to disambiguate: TK0186@2026-07-13. Multiple rows sharing the same PNR become passengers on one shared booking with the same legs. PNRs that already exist are skipped, not overwritten.</small>
     </div>
   </div>
 
@@ -960,7 +960,9 @@ ${bulkTemplateRows().trim()}"></textarea>
     <small class="hint">${draftRouteSummary()} &nbsp; Past flights are not selectable — a PNR can only be created for today's or future flights.</small>
 
     <table style="margin-top:12px">
-      <thead><tr><th>Title</th><th>Surname</th><th>Given Name</th><th>DOB</th><th>Passport No.</th><th>Nat.</th><th>Expiry</th><th>Class</th><th></th></tr></thead>
+      <thead><tr><th>Title</th><th>Surname</th><th>Given Name</th><th>DOB</th><th>Passport No.</th><th>Nat.</th><th>Expiry</th><th>Class</th>
+        ${pnrDraft.leg1?'<th>Seat — Leg 1</th>':''}${pnrDraft.leg2?'<th>Seat — Leg 2</th>':''}${pnrDraft.leg3?'<th>Seat — Leg 3</th>':''}
+        <th></th></tr></thead>
       <tbody>
         ${pnrDraft.rows.map((r,i)=>`
         <tr>
@@ -978,6 +980,11 @@ ${bulkTemplateRows().trim()}"></textarea>
             <option value="premium" ${r.cls==='premium'?'selected':''}>Premium Economy</option>
             <option value="business" ${r.cls==='business'?'selected':''}>Business</option>
           </select></td>
+          ${[1,2,3].filter(n=>pnrDraft['leg'+n]).map(n=>`
+          <td style="white-space:nowrap">
+            ${r.seats[n] ? `<b>${r.seats[n]}</b> <button class="btn small secondary" onclick="openDraftSeatPicker(${i},${n})">Change</button> <button class="btn small danger" onclick="clearDraftSeat(${i},${n})">✕</button>`
+                         : `<button class="btn small secondary" onclick="openDraftSeatPicker(${i},${n})">Pick Seat</button>`}
+          </td>`).join('')}
           <td><button class="btn danger small" ${pnrDraft.rows.length<=1?'disabled':''} onclick="removeDraftRow(${i})">✕</button></td>
         </tr>`).join('')}
       </tbody>
@@ -986,9 +993,11 @@ ${bulkTemplateRows().trim()}"></textarea>
       <button class="btn secondary small" onclick="addDraftRow()">+ Add Passenger Row</button>
       <button class="btn" ${pnrDraft.leg1?'':'disabled'} onclick="submitCreatePnr()">Create PNR</button>
     </div>
-    <small class="hint">All passengers listed above are created together under one PNR, attached to every selected flight leg. Baggage entered later at Check-In is tagged through to the final destination automatically.</small>
+    <small class="hint">All passengers listed above are created together under one PNR, attached to every selected flight leg. Picking a seat is optional — leave it for later at Check-In if you prefer. Baggage entered later at Check-In is tagged through to the final destination automatically.</small>
     </div>
   </div>
+
+  ${renderDraftSeatPickerPanel()}
   `;
 }
 
@@ -1021,7 +1030,7 @@ function bulkTemplateRows(){
 }
 
 function downloadBulkTemplate(){
-  const header = "PNR,LEG1_FLIGHTNO,LEG2_FLIGHTNO,LEG3_FLIGHTNO,TITLE,SURNAME,GIVEN,DOB,PASSPORT,NATIONALITY,EXPIRY,CLASS\n";
+  const header = "PNR,LEG1_FLIGHTNO,LEG2_FLIGHTNO,LEG3_FLIGHTNO,TITLE,SURNAME,GIVEN,DOB,PASSPORT,NATIONALITY,EXPIRY,CLASS,SEAT1,SEAT2,SEAT3\n";
   const csv = header + bulkTemplateRows();
   const blob = new Blob([csv], {type:'text/csv'});
   const url = URL.createObjectURL(blob);
@@ -1055,7 +1064,7 @@ function parseBulkImportPNRs(){
   for(let i=startIdx;i<lines.length;i++){
     const cols = lines[i].split(delim).map(c=>c.trim());
     if(cols.length<7){ errors.push(`Line ${i+1}: not enough columns`); continue; }
-    const [pnrRaw, leg1no, leg2no, leg3no, title, surname, given, dob, passport, nationality, expiry, cls] = cols;
+    const [pnrRaw, leg1no, leg2no, leg3no, title, surname, given, dob, passport, nationality, expiry, cls, seat1, seat2, seat3] = cols;
     if(!surname){ errors.push(`Line ${i+1}: missing surname`); continue; }
     if(!leg1no && (leg2no || leg3no)){ errors.push(`Line ${i+1}: LEG1 is empty but LEG2/LEG3 has a value — fill LEG1 first, skipped`); continue; }
     const pnr = (pnrRaw || genPNR()).toUpperCase();
@@ -1063,7 +1072,8 @@ function parseBulkImportPNRs(){
     grouped[pnr].rows.push({
       title:(title||'MR').toUpperCase(), surname:surname.toUpperCase(), given:(given||'GIVENNAME').toUpperCase(),
       dob:dob||'', passport:(passport||'').toUpperCase(), nationality:(nationality||'').toUpperCase(),
-      expiry:expiry||'', cls:(cls||'economy').toLowerCase().trim()
+      expiry:expiry||'', cls:(cls||'economy').toLowerCase().trim(),
+      seats:{ 1:(seat1||'').toUpperCase().trim()||null, 2:(seat2||'').toUpperCase().trim()||null, 3:(seat3||'').toUpperCase().trim()||null }
     });
   }
 
@@ -1109,15 +1119,38 @@ function parseBulkImportPNRs(){
     }
     if(capacityFail){ errors.push(capacityFail); return; }
 
+    // optional seat pre-assignment, per leg: validate no duplicates within this PNR and no clashes with already-booked seats
+    let seatFail = null;
+    for(let legNum=1; legNum<=legIds.length; legNum++){
+      const legId = legIds[legNum-1];
+      const requestedSeats = group.rows.map(r=>r.seats[legNum]||null);
+      const seatCounts = {};
+      requestedSeats.forEach(s=>{ if(s) seatCounts[s]=(seatCounts[s]||0)+1; });
+      const dupSeat = Object.keys(seatCounts).find(s=>seatCounts[s]>1);
+      if(dupSeat){ seatFail = `PNR ${pnr}: seat ${dupSeat} requested for more than one passenger on Leg ${legNum}, skipped`; break; }
+      const takenSeats = new Set();
+      STATE.bookings.filter(b=>b.legs.includes(legId)).forEach(b=>b.passengers.forEach(p=>{ const s=p.legs[legId]?.seat; if(s) takenSeats.add(s); }));
+      const clashSeat = requestedSeats.find(s=>s && takenSeats.has(s));
+      if(clashSeat){ seatFail = `PNR ${pnr}: seat ${clashSeat} is already taken on ${resolvedFlights[legNum-1].flightNo} (Leg ${legNum}), skipped`; break; }
+    }
+    if(seatFail){ errors.push(seatFail); return; }
+
     const legsState = {};
     legIds.forEach(fid=>{ legsState[fid] = { seat:null, checkedIn:false, seq:null, boarded:false }; });
-    const passengers = group.rows.map(r=>({
-      key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
-      title:r.title, surname:r.surname, given:r.given, dob:r.dob,
-      passportNumber:r.passport, nationality:r.nationality, passportExpiry:r.expiry,
-      cls:['economy','premium','business'].includes(r.cls) ? r.cls : 'economy', group:'-', eTicket: genETicket(),
-      legs: JSON.parse(JSON.stringify(legsState)), bags:0, bagWeights:[], bagTags:[]
-    }));
+    const passengers = group.rows.map(r=>{
+      const legsClone = JSON.parse(JSON.stringify(legsState));
+      legIds.forEach((legId,idx)=>{
+        const legNum = idx+1;
+        if(r.seats[legNum]) legsClone[legId].seat = r.seats[legNum];
+      });
+      return {
+        key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
+        title:r.title, surname:r.surname, given:r.given, dob:r.dob,
+        passportNumber:r.passport, nationality:r.nationality, passportExpiry:r.expiry,
+        cls:['economy','premium','business'].includes(r.cls) ? r.cls : 'economy', group:'-', eTicket: genETicket(),
+        legs: legsClone, bags:0, bagWeights:[], bagTags:[]
+      };
+    });
     STATE.bookings.push({ pnr, legs:legIds, passengers });
     importedPnrCount++; importedPaxCount += passengers.length;
   });
@@ -1130,13 +1163,14 @@ function parseBulkImportPNRs(){
 
 function newPnrDraft(){
   return { pnr: genPNR(), leg1:'', leg2:'', leg3:'',
-    rows:[{title:'MR',surname:'',given:'',dob:'',passport:'',nationality:'',expiry:'',cls:'economy'}] };
+    rows:[{title:'MR',surname:'',given:'',dob:'',passport:'',nationality:'',expiry:'',cls:'economy',seats:{}}] };
 }
 function regenDraftPnr(){ pnrDraft.pnr = genPNR(); render(); }
 function setDraftLeg(n,v){
-  if(n===1){ pnrDraft.leg1=v; if(!v){ pnrDraft.leg2=''; pnrDraft.leg3=''; } }
-  if(n===2){ pnrDraft.leg2=v; if(!v) pnrDraft.leg3=''; }
-  if(n===3){ pnrDraft.leg3=v; }
+  if(n===1){ pnrDraft.leg1=v; if(!v){ pnrDraft.leg2=''; pnrDraft.leg3=''; pnrDraft.rows.forEach(r=>{r.seats={};}); } }
+  if(n===2){ pnrDraft.leg2=v; if(!v){ pnrDraft.leg3=''; pnrDraft.rows.forEach(r=>{delete r.seats[2]; delete r.seats[3];}); } }
+  if(n===3){ pnrDraft.leg3=v; if(!v) pnrDraft.rows.forEach(r=>{delete r.seats[3];}); }
+  draftSeatPicker = null;
   render();
 }
 function draftRouteSummary(){
@@ -1148,14 +1182,94 @@ function draftRouteSummary(){
   return `Routing: ${chain} across ${legs.map(f=>f.flightNo).join(' / ')}.`;
 }
 function addDraftRow(){
-  pnrDraft.rows.push({title:'MR',surname:'',given:'',dob:'',passport:'',nationality:'',expiry:'',cls:'economy'});
+  pnrDraft.rows.push({title:'MR',surname:'',given:'',dob:'',passport:'',nationality:'',expiry:'',cls:'economy',seats:{}});
   render();
 }
 function removeDraftRow(i){
   if(pnrDraft.rows.length<=1) return;
-  pnrDraft.rows.splice(i,1); render();
+  pnrDraft.rows.splice(i,1);
+  if(draftSeatPicker && draftSeatPicker.rowIndex===i) draftSeatPicker=null;
+  render();
 }
 function updateDraftRow(i,field,v){ pnrDraft.rows[i][field]=v; }
+
+/* ---- Visual seat picker for Create-PNR draft rows: pick a real seat on the
+   aircraft's own seat map for any of the up to 3 legs, before the PNR exists ---- */
+let draftSeatPicker = null; // {rowIndex, legNum} while open, else null
+
+function openDraftSeatPicker(rowIndex, legNum){
+  const flightId = [pnrDraft.leg1,pnrDraft.leg2,pnrDraft.leg3][legNum-1];
+  if(!flightId) return;
+  draftSeatPicker = { rowIndex, legNum };
+  render();
+}
+function closeDraftSeatPicker(){ draftSeatPicker = null; render(); }
+
+function pickDraftSeat(seatId, cls){
+  if(!draftSeatPicker) return;
+  const row = pnrDraft.rows[draftSeatPicker.rowIndex];
+  row.seats[draftSeatPicker.legNum] = seatId;
+  row.cls = cls; // keep the class dropdown in sync with whichever cabin the picked seat sits in
+  draftSeatPicker = null;
+  render();
+}
+function clearDraftSeat(rowIndex, legNum){
+  delete pnrDraft.rows[rowIndex].seats[legNum];
+  render();
+}
+
+function renderDraftSeatPickerPanel(){
+  if(!draftSeatPicker) return '';
+  const { rowIndex, legNum } = draftSeatPicker;
+  const flightId = [pnrDraft.leg1,pnrDraft.leg2,pnrDraft.leg3][legNum-1];
+  const flight = STATE.flights.find(f=>f.id===flightId);
+  if(!flight) return '';
+  const ac = getAircraftByReg(flight.tailNumber);
+  if(!ac) return `<div class="panel"><div class="panel-body empty">This flight has no registered aircraft/cabin layout — cannot pick a seat.</div></div>`;
+
+  // seats already taken by real bookings on this flight...
+  const takenIds = new Set();
+  STATE.bookings.filter(b=>b.legs.includes(flightId)).forEach(b=>b.passengers.forEach(p=>{ const s=p.legs[flightId]?.seat; if(s) takenIds.add(s); }));
+  // ...plus seats already picked by OTHER rows in this same draft for this same leg
+  pnrDraft.rows.forEach((r,i)=>{ if(i!==rowIndex && r.seats[legNum]) takenIds.add(r.seats[legNum]); });
+  const curSeat = pnrDraft.rows[rowIndex].seats[legNum] || null;
+
+  const masterLetters = getMasterLetters(ac);
+  const aisleBefore = getAisleBeforeSet(ac);
+  const gridCols = `24px repeat(${masterLetters.length}, 26px) auto`;
+
+  let mapHtml = '<div class="seatmap">';
+  ['business','premium','economy'].forEach(cls=>{
+    classRowDefs(ac, cls).forEach(rd=>{
+      const rowNum = rd.row;
+      const rowLetters = new Set();
+      rd.groups.forEach(g=>g.forEach(l=>rowLetters.add(l)));
+      mapHtml += `<div class="seatrow ${rd.exitRow?'exitrow':''}" style="display:grid;grid-template-columns:${gridCols};align-items:center;gap:3px;">`;
+      mapHtml += `<div class="rownum">${rowNum}${rd.exitRow?' <span class="exit-tag" title="Emergency Exit Row">EXIT</span>':''}</div>`;
+      masterLetters.forEach(letter=>{
+        const gapStyle = aisleBefore.has(letter) ? 'margin-left:8px;' : '';
+        if(rowLetters.has(letter)){
+          const id = rowNum+letter;
+          const isTaken = takenIds.has(id) && curSeat!==id;
+          const isSelected = curSeat===id;
+          mapHtml += `<div class="seat ${cls} ${rd.exitRow?'exitrow':''} ${isTaken?'taken':''} ${isSelected?'selected':''}" style="${gapStyle}" ${isTaken?'':`onclick="pickDraftSeat('${id}','${cls}')"`}>${letter}</div>`;
+        }else{
+          mapHtml += `<div class="seat-blank" style="${gapStyle}"></div>`;
+        }
+      });
+      mapHtml += `<span class="badge ${cls}" style="margin-left:8px;justify-self:start;width:fit-content;">${classLabel(cls)}</span></div>`;
+    });
+  });
+  mapHtml += '</div>';
+
+  return `
+  <div class="panel">
+    <div class="panel-title">Pick a Seat — ${flight.flightNo} ${flight.from}-${flight.to} (Leg ${legNum})<span style="float:right"><button class="btn small secondary" onclick="closeDraftSeatPicker()">✕ Close</button></span></div>
+    <div class="panel-body">
+    <div id="seatmap-container">${mapHtml}</div>
+    </div>
+  </div>`;
+}
 
 function submitCreatePnr(){
   const legIds = [pnrDraft.leg1,pnrDraft.leg2,pnrDraft.leg3].filter(Boolean);
@@ -1184,17 +1298,41 @@ function submitCreatePnr(){
     }
   }
 
+  // validate optional seat requests, per leg: no duplicates within this PNR for that leg, none already taken
+  for(let legNum=1; legNum<=legIds.length; legNum++){
+    const legId = legIds[legNum-1];
+    const legFlight = legFlights[legNum-1];
+    const requestedSeats = validRows.map(r=> r.seats && r.seats[legNum] ? r.seats[legNum] : null);
+    const seatCounts = {};
+    requestedSeats.forEach(s=>{ if(s) seatCounts[s]=(seatCounts[s]||0)+1; });
+    const dupSeat = Object.keys(seatCounts).find(s=>seatCounts[s]>1);
+    if(dupSeat) return notify(`Seat ${dupSeat} was requested for more than one passenger on Leg ${legNum} (${legFlight.flightNo}).`);
+    const takenSeats = new Set();
+    STATE.bookings.filter(b=>b.legs.includes(legId)).forEach(b=>b.passengers.forEach(p=>{ const s=p.legs[legId]?.seat; if(s) takenSeats.add(s); }));
+    for(const s of requestedSeats){
+      if(s && takenSeats.has(s)) return notify(`Seat ${s} is already taken on ${legFlight.flightNo} (${legFlight.from}-${legFlight.to}), Leg ${legNum}.`);
+    }
+  }
+
   const legsState = {};
   legIds.forEach(id=>{ legsState[id] = { seat:null, checkedIn:false, seq:null, boarded:false }; });
 
-  const passengers = validRows.map(r=>({
-    key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
-    title:r.title, surname:r.surname.toUpperCase(), given:(r.given||'GIVENNAME').toUpperCase(),
-    dob:r.dob, passportNumber:r.passport.toUpperCase(), nationality:r.nationality.toUpperCase(), passportExpiry:r.expiry,
-    cls:r.cls, group:'-', eTicket: genETicket(),
-    legs: JSON.parse(JSON.stringify(legsState)),
-    bags:0, bagWeights:[], bagTags:[]
-  }));
+  const passengers = validRows.map(r=>{
+    const legsClone = JSON.parse(JSON.stringify(legsState));
+    legIds.forEach((legId,idx)=>{
+      const legNum = idx+1;
+      const seat = r.seats && r.seats[legNum] ? r.seats[legNum] : null;
+      if(seat) legsClone[legId].seat = seat;
+    });
+    return {
+      key:'p'+Date.now()+Math.random().toString(36).slice(2,6),
+      title:r.title, surname:r.surname.toUpperCase(), given:(r.given||'GIVENNAME').toUpperCase(),
+      dob:r.dob, passportNumber:r.passport.toUpperCase(), nationality:r.nationality.toUpperCase(), passportExpiry:r.expiry,
+      cls:r.cls, group:'-', eTicket: genETicket(),
+      legs: legsClone,
+      bags:0, bagWeights:[], bagTags:[]
+    };
+  });
 
   STATE.bookings.push({ pnr, legs:legIds, passengers });
   pnrDraft = newPnrDraft();
@@ -1698,7 +1836,7 @@ function renderCheckin(){
         <select onchange="STATE.selection.pnr=this.value;STATE.selection.passengerKey=null;addPaxFormOpen=false;render()">${pnrOptions || '<option>—</option>'}</select>
       </div>
       ${booking ? `<button class="btn small danger" onclick="deletePnr('${booking.pnr}')">${pendingDeletePnr===booking.pnr?'Confirm Delete?':'Delete This PNR'}</button>${pendingDeletePnr===booking.pnr?`<button class="btn small secondary" onclick="cancelDeletePnr()">Cancel</button>`:''}` : ''}
-      <button class="btn secondary small" onclick="checkInAllForFlight()">Check-In All For Flight</button>
+      <button class="btn secondary small" title="Passengers with a transfer are checked in through all their legs, not just this one" onclick="checkInAllForFlight()">Check-In All For Flight</button>
     </div>
     </div>
   </div>
@@ -2007,27 +2145,36 @@ function checkInAllForFlight(){
   const flightId = STATE.selection.flightId;
   const flight = STATE.flights.find(f=>f.id===flightId);
   if(!flight) return;
-  let checkedCount=0, skippedNoSeat=0;
+  let checkedCount=0, throughCount=0, skippedNoSeat=0;
   STATE.bookings.filter(b=>b.legs.includes(flightId)).forEach(b=>{
     b.passengers.forEach(p=>{
-      if(!p.legs[flightId]) p.legs[flightId] = { seat:null, checkedIn:false, seq:null, boarded:false };
-      const ls = p.legs[flightId];
-      if(ls.checkedIn) return; // already checked in, leave as is
-      if(!ls.seat){
-        const auto = autoAssignSeat(flightId, p.cls, p.key);
-        if(!auto){ skippedNoSeat++; return; } // no seats left in that class
-        ls.seat = auto;
+      const isTransfer = b.legs.length>1;
+      let anyLegChecked = false, anyLegFailed = false;
+      b.legs.forEach(legId=>{
+        if(!p.legs[legId]) p.legs[legId] = { seat:null, checkedIn:false, seq:null, boarded:false };
+        const ls = p.legs[legId];
+        if(ls.checkedIn) return; // already checked in on this leg, leave as is
+        if(!ls.seat){
+          const auto = autoAssignSeat(legId, p.cls, p.key);
+          if(!auto){ anyLegFailed = true; return; } // no seats left in that class on this leg
+          ls.seat = auto;
+        }
+        STATE.seqCounters[legId] = (STATE.seqCounters[legId]||0)+1;
+        ls.seq = String(STATE.seqCounters[legId]).padStart(3,'0');
+        ls.checkedIn = true;
+        anyLegChecked = true;
+      });
+      if(anyLegChecked){
+        ensureThroughBagTags(b, p);
+        checkedCount++;
+        if(isTransfer) throughCount++;
       }
-      STATE.seqCounters[flightId] = (STATE.seqCounters[flightId]||0)+1;
-      ls.seq = String(STATE.seqCounters[flightId]).padStart(3,'0');
-      ls.checkedIn = true;
-      ensureThroughBagTags(b, p);
-      checkedCount++;
+      if(anyLegFailed) skippedNoSeat++;
     });
   });
   saveState(); render();
-  let msg = `Checked in ${checkedCount} passenger(s) for ${flight.flightNo}.`;
-  if(skippedNoSeat) msg += ` ${skippedNoSeat} could not be seated (class full).`;
+  let msg = `Checked in ${checkedCount} passenger(s) for ${flight.flightNo}${throughCount?` (${throughCount} through their full transfer itinerary)`:''}.`;
+  if(skippedNoSeat) msg += ` ${skippedNoSeat} could not be fully seated on every leg (class full somewhere).`;
   notify(msg, skippedNoSeat ? 'err' : 'ok');
 }
 
@@ -2233,7 +2380,7 @@ function boardingPassHTML_Celebi(p,f){
         <div class="content cel-content" style="padding-left:6mm">
           <div class="cel-row">
             <div class="cel-label">NAME OF PASSENGER (NOT TRANSFERABLE)</div>
-            <div class="cel-value">${p.surname}/${p.given} ${p.title==='CHD'?'CHD':''}</div>
+            <div class="cel-value">${p.surname}/${p.given}/${p.title}</div>
           </div>
           <div class="cel-row2">
             <div><div class="cel-label">X/O FROM</div><div class="cel-value">${f.fromCity}</div></div>
@@ -2268,7 +2415,7 @@ function boardingPassHTML_Celebi(p,f){
         <div class="content cel-content cel-stub-narrow" style="padding:1.5mm 4mm">
           <div class="cel-row">
             <div class="cel-label">NAME OF PASSENGER</div>
-            <div class="cel-value">${p.surname}/${p.given} ${p.title==='CHD'?'CHD':''}</div>
+            <div class="cel-value">${p.surname}/${p.given}/${p.title}</div>
           </div>
           <div class="cel-row2">
             <div><div class="cel-label">X/O FROM</div><div class="cel-value">${f.fromCity}</div></div>
@@ -2382,7 +2529,7 @@ function boardingPassHTML_Charter(p,f){
         <div class="content ch-content">
           <div class="ch-cols">
             <div class="ch-left">
-              <div class="ch-lrow"><label>PASSENGER</label><span>${p.surname}/${p.given}</span></div>
+              <div class="ch-lrow"><label>PASSENGER</label><span>${p.surname}/${p.given}${p.title}</span></div>
               <div class="ch-lrow"><label>FLYING FROM</label><span>${f.fromCity}</span></div>
               <div class="ch-lrow"><label>TO</label><span>${f.toCity}</span></div>
               <div class="ch-lrow"><label>ON FLIGHT</label><span>${f.flightNo}</span></div>
@@ -2408,7 +2555,7 @@ function boardingPassHTML_Charter(p,f){
         <div class="content ch-content" style="padding:2.5mm 4mm;justify-content:space-between;height:100%;box-sizing:border-box;position:absolute;top:0;left:0;right:0;bottom:0;">
           <div class="ch-stub-narrow">
           <div class="ch-lrow"><label>PNR</label><span>${p.pnr}</span></div>
-          <div class="ch-stacked"><label>PASSENGER</label><span>${p.surname}/${p.given}</span></div>
+          <div class="ch-stacked"><label>PASSENGER</label><span>${p.surname}/${p.given}${p.title}</span></div>
           <div class="ch-stacked"><label>FROM</label><span>${f.fromCity}</span></div>
           <div class="ch-stacked"><label>TO</label><span>${f.toCity}</span></div>
           </div>
